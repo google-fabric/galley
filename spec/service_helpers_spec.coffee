@@ -313,6 +313,7 @@ describe 'processConfig', ->
           image: 'docker.example.tv/application'
           links: []
           ports: []
+          restart: false
           source: null
           stateful: false
           user: ''
@@ -326,6 +327,7 @@ describe 'processConfig', ->
           image: 'mysql'
           links: []
           ports: []
+          restart: false
           source: null
           stateful: false
           user: ''

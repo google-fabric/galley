@@ -11,6 +11,7 @@ DEFAULT_SERVICE_CONFIG =
   image: null
   links: []
   ports: []
+  restart: false
   source: null
   stateful: false
   user: ''

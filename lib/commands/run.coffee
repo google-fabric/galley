@@ -16,6 +16,7 @@ DockerUtils = require '../lib/docker_utils'
 OverlayOutputStream = require '../lib/overlay_output_stream'
 Rsyncer = require '../lib/rsyncer'
 ServiceHelpers = require '../lib/service_helpers'
+StdinCommandInterceptor = require '../lib/stdin_command_interceptor'
 
 RECREATE_OPTIONS = ['all', 'stale', 'missing-link']
 
@@ -47,6 +48,9 @@ makeCreateOpts = (imageInfo, serviceConfig, servicesMap, options) ->
 
   if serviceConfig.command?
     createOpts['Cmd'] = serviceConfig.command
+
+  if serviceConfig.restart
+    createOpts['HostConfig']['RestartPolicy'] = { 'Name': 'always' }
 
   if serviceConfig.entrypoint?
     # We special case no entrypoint ("--entrypoint=") to an empty array to get
@@ -285,60 +289,6 @@ maybeAttachStream = (container, serviceConfig) ->
     else
       resolve {container, stream: null}
 
-# Pipes options.stdin into the container, setting up TTY mode if necessary.
-#
-# Detects if the connection is interrupted with CTRL-P CTRL-Q and, if so, destroys the outputStream
-# so that the "maybePipeStdStreams" promise resolves (which happens when the stream ends).
-attachInputStream = (container, outputStream, options) ->
-  options.stdin.setEncoding 'utf8'
-
-  DockerUtils.attachContainer container,
-    stream: true
-    stdin: true
-    stdout: false
-    stderr: false
-  .then ({container, stream: inputStream}) ->
-    # We save off this input stream on the sighupHandler so that it can close us when the SIGHUP
-    # is caught.
-    sighupHandler.inputStream = inputStream
-
-    # Raw mode sends keystrokes and such over into the container for interactive shell use. We
-    # need to unset when the stream closes to prevent certain host shells from not echoing input.
-    if options.stdin.isTTY
-      inputStream.setEncoding 'utf8'
-      options.stdin.setRawMode true
-
-    options.stdin.pipe inputStream, end: false
-
-    # Boolean to keep track of whether STDIN has run out of data. If it has, and the socket closes,
-    # we don't do anything. The container will process the input data, write data to the output
-    # stream, and probably close naturally.
-    #
-    # If the socket closes and we haven't explicitly closed STDIN, that means that the container
-    # was probably detached with CTRL-P CTRL-Q. In that case we forceably destroy the outputStream
-    # in order to close it and resolve its promise. The container will still be running, so we'll
-    # print out the "container detached" info below.
-    inputEnded = false
-
-    # If STDIN closes, we proxy that close through to the stream. This happens when e.g. data
-    # piped on the command line runs out. Closing the stream essentially sends that EOF in to the
-    # container.
-    options.stdin.on 'end', ->
-      inputEnded = true
-      inputStream.end()
-
-    # Handler to catch our connection closing to the Docker container for any reason, including:
-    #  - stdin ending and us calling inputStream.end() above
-    #  - container detaching due to CTRL-P CTRL-Q
-    #  - stream being destroyed by the sighupHandler to kick us out of the attachment
-    #
-    # We dig into Dockerode's internal data to get the socket because it's the only reliable way
-    # to detect the close. (Dockerode doesn't proxy the close that happens on CTRL-P CTRL-Q to
-    # the stream, for example.)
-    inputStream._output.socket.on 'close', ->
-      options.stdin.setRawMode? false
-      outputStream.destroy() unless inputEnded
-
 # Pipes the provided container and its stream to stdout/stderr. If "stream" is null, just
 # resolves immediately.
 #
@@ -346,36 +296,66 @@ attachInputStream = (container, outputStream, options) ->
 # allow stdout info to flow.
 #
 # Returns a promise that resolves when the stream "ends," a sign that either the process has
-# completed within the container, or the user has detached using CTRL-P CTRL-Q. The promise has a
-# hash of the format:
+# completed within the container, the user has detached or issued another CTRL-P command, or the
+# process is being restarted by the RestartPolicy. The promise has a hash of the format:
 #  container: the passed-through container
-#  resolution: 'detached' if we didn't want to bind anyway, 'attached' if we bound and the stream
-#    either completed (or was interrupted by CTRL-P CTRL-Q), 'sighup' if we stopped because of SIGHUP.
+#  resolution: one of the following values:
+#    "end": output stream has closed, either because the command completed or it's restarting
+#    "detach": the user has triggered a detachment from the running container
+#    "stop": the user has requested we stop the container
+#    "reload": the user has requested Galley re-run, re-checking dependencies and recreating the
+#       primary container if necessary
+#    "unattached": we weren't asked to attach in the first place
 maybePipeStdStreams = (container, outputStream, options) ->
-  return RSVP.resolve({container, resolution: 'detached'}) if outputStream is null
+  return RSVP.resolve({container, resolution: 'unattached'}) if outputStream is null
 
-  attachInputStream container, outputStream, options
-  .then ->
+  DockerUtils.attachContainer container,
+    stream: true
+    stdin: true
+    stdout: false
+    stderr: false
+  .then ({container, stream: inputStream}) ->
+    options.stdinCommandInterceptor.start(inputStream)
+
+    # Tells the container how big we are so that shell output looks nice, and keeps that
+    # information up-to-date if you resize the host terminal window. We ignore the promises that
+    # resizeContainer returns since it's ok to be async and/or fail.
+    resizeHandler = -> DockerUtils.resizeContainer container, options.stdout
+
+    # We declare these in a scope outside of the RSVP.Promise callback so that we can reference
+    # them from the finally to removeListener them. (They must be defined inside of the RSVP.Promise
+    # callback to have access to the resolve / reject callbacks.)
+    stdinCommandInterceptorHandler = null
+    outputStreamEndHandler = null
+
     new RSVP.Promise (resolve, reject) ->
-      # The output stream will be closed naturally by Docker if the container stops, but we also
-      # close it forceably above if the input stream becomes mysteriously detached.
-      outputStream.on 'end', ->
-        resolution = if sighupHandler.fired then 'sighup' else 'attached'
-        resolve {container, resolution}
+      # This handler fires first if we intercept a command from the container.
+      stdinCommandInterceptorHandler = ({command}) ->
+        options.stdinCommandInterceptor.stop()
+
+        # We need to manually disconnect the output stream, or else Docker may keep it open,
+        # causing doubled output if we reattach.
+        outputStream.destroy()
+
+        resolve {container, resolution: command}
+
+      # This handler fires first if the container exits cleanly, is stopped/killed externally, or
+      # its process ends and is restarted by the RestartPolicy.
+      outputStreamEndHandler = ->
+        options.stdinCommandInterceptor.stop()
+        resolve {container, resolution: 'end'}
+
+      options.stdinCommandInterceptor.on 'command', stdinCommandInterceptorHandler
+      outputStream.on 'end', outputStreamEndHandler
 
       if options.stdout.isTTY
         outputStream.setEncoding 'utf8'
 
         # For TTY we have a blended output of both STDOUT and STDERR
-        outputStream.pipe options.stdout, end: true
+        outputStream.pipe options.stdout, end: false
 
-        # Tells the container how big we are so that shell output looks nice, and keeps that
-        # information up-to-date if you resize the host terminal window. We ignore the promises that
-        # resizeContainer returns since it's ok to be async and/or fail.
-        DockerUtils.resizeContainer container, options.stdout
-        options.stdout.on 'resize', ->
-          DockerUtils.resizeContainer container, options.stdout
-
+        resizeHandler()
+        options.stdout.on 'resize', resizeHandler
       else
         outputStream.on 'end', ->
           try options.stdout.end() catch # ignore
@@ -384,6 +364,11 @@ maybePipeStdStreams = (container, outputStream, options) ->
         # For non-TTY, we keep stdout and stderr separate, and pipe them appropriately to our
         # process's streams.
         container.modem.demuxStream outputStream, options.stdout, options.stderr
+
+    .finally ->
+      options.stdout.removeListener 'resize', resizeHandler
+      options.stdinCommandInterceptor.removeListener 'command', stdinCommandInterceptorHandler
+      outputStream.removeListener 'end', outputStreamEndHandler
 
 # Starts a given service, including downloading, creating, removing, and restarting and whatever
 # else is necessary to get it going. Meant to be called in a loop with prerequisite services
@@ -421,6 +406,7 @@ startService = (docker, serviceConfig, service, options, completedServicesMap) -
   .then ({container, info: containerInfo}) ->
     completedServicesMap[service].containerName = containerInfo.Name
 
+    # Attach before starting so we can be sure to get all of the output
     maybeAttachStream container, serviceConfig
     .then ({container, stream}) -> {container, stream, info: containerInfo}
 
@@ -428,8 +414,34 @@ startService = (docker, serviceConfig, service, options, completedServicesMap) -
     ensureContainerStarted container, containerInfo, service, serviceConfig, options, completedServicesMap
     .then ({container}) ->
       options.reporter.finish() unless options.leaveReporterOpen
-      maybePipeStdStreams container, stream, options
+      pipeStreamsLoop container, stream, options
     .then ({container, resolution}) -> {container, resolution}
+
+# Calls maybePipeStdStreams and then loops to keep calling it if the stream ends while the
+# container is still running. This lets us re-attach input and output streams when the container's
+# process dies but is restarted by a RestartPolicy.
+#
+# Returns a promise that resolves to maybePipeStdStreams's container/resolution hash.
+pipeStreamsLoop = (container, stream, options) ->
+  maybePipeStdStreams container, stream, options
+  .then ({container, resolution}) ->
+    if resolution is 'end'
+      DockerUtils.inspectContainer container
+      .then ({container, info}) ->
+        # If the container is still going despite the stream having ended then we should try
+        # to re-attach. It's likely that the container's RestartPolicy restarted the process.
+        #
+        # (The first call to maybeAttachStream happened before starting the service initially, back
+        # in startService, which is why this call is down here and not at the beginning of
+        # pipeStreamsLoop.)
+        if info.State.Running or info.State.Restarting
+          maybeAttachStream container, options
+          .then ({container, stream}) ->
+            pipeStreamsLoop container, stream, options
+        else
+          {container, resolution}
+    else
+      {container, resolution}
 
 # We chown anything under the "source" directory to the original owner of the "source"
 # directory, since if a Docker command created any files they'll be owned by root, which
@@ -473,42 +485,35 @@ maybeRepairSourceOwnership = (docker, config, service, options) ->
         options.reporter.error("Failed with exit code #{result.StatusCode}")
   .then -> true
 
-# Called after an attachment to a container has stopped. Either the container has completed its
-# process, in which case we determine the process's status code and remove the container, or the
-# container is still running in which case we print out help about reattaching / removing.
+printDetachedMessage = (container, options) ->
+  DockerUtils.inspectContainer(container)
+  .then ({container, info}) ->
+    # Docker reports names canonically as beginning with a '/', which looks lame. Remove it.
+    name = info.Name.replace /^\//, ''
+
+    options.reporter.message ''
+    options.reporter.message ''
+    options.reporter.message chalk.gray('Container detached: ') + chalk.bold(name)
+    options.reporter.message chalk.gray('Reattach with: ') + "docker attach #{name}"
+    options.reporter.message chalk.gray('Remove with: ') + "docker rm -fv #{name}"
+
+# Gets the status code of a container, then removes it. Reports an error if the container did not
+# exit cleanly with a code of 0.
 #
 # Resolves to a hash of the format:
 #   container: the container
 #   statusCode: if not null, the status code of the completed process
-finalizeService = (container, options) ->
+finalizeContainer = (container, options) ->
   DockerUtils.inspectContainer container
   .then ({container, info}) ->
-    if info.State.Running
-      # If the container is still running, then we got here by having our stream detached. So,
-      # print out some help to let people know how to proceed from here.
+    statusCode = info.State.ExitCode
 
-      # Docker reports names canonically as beginning with a '/', which looks lame. Remove it.
-      name = info.Name.replace /^\//, ''
+    if statusCode? and statusCode isnt 0
+      options.reporter.error "#{info.Config.Cmd.join ' '} failed with exit code #{statusCode}"
 
-      options.reporter.message ''
-      options.reporter.message ''
-      options.reporter.message chalk.gray('Container detached: ') + chalk.bold(name)
-      options.reporter.message chalk.gray('Reattach with: ') + "docker attach #{name}"
-      options.reporter.message chalk.gray('Remove with: ') + "docker rm -f #{name}"
-
-      # If the stream was just detached, Docker doesn't end up closing it, so let's do that now.
-      # Otherwise Node will keep the whole program open.
-      options.stdin.end?()
-
-      {container, statusCode: null}
-    else
-      statusCode = info.State.ExitCode
-      if statusCode? and statusCode isnt 0
-        options.reporter.error "#{info.Config.Cmd.join ' '} failed with exit code #{statusCode}"
-
-      # Since the process exited, we remove the container. (Equivalent of --rm in Docker.)
-      DockerUtils.removeContainer container
-      .then -> {container, statusCode}
+    # Since the process exited, we remove the container. (Equivalent of --rm in Docker.)
+    DockerUtils.removeContainer container
+    .then -> {container, statusCode}
 
 # Returns a callback suitable for sending to Rsyncer's "watch" method. Keeps a general status of
 # "watching" or "syncing" with the directory being watched. When a sync is complete, flashes
@@ -657,8 +662,9 @@ parseArgs = (args) ->
     boolean: [
       'detach'
       'repairSourceOwnership'
-      'unprotectStateful'
+      'restart'
       'rsync'
+      'unprotectStateful'
     ]
     alias:
       'add': 'a'
@@ -709,9 +715,11 @@ parseArgs = (args) ->
       command: argv._.slice(1)
       containerName: ''
       publishPorts: false
+      restart: false
 
   _.merge serviceConfigOverrides, _.pick argv, [
     'entrypoint'
+    'restart'
     'user'
     'workdir'
   ]
@@ -740,9 +748,6 @@ parseArgs = (args) ->
 #   statusCode: the statusCode of the container's process if it ran to completion, 0 if we detached,
 #     or -1 if there was an error.
 go = (docker, servicesConfig, services, options) ->
-  sighupHandler.fired = false
-  sighupHandler.inputStream = null
-
   # TODO(phopkins): Don't assume that the last service is the primary one once we implement
   # triggers.
   service = services.pop()
@@ -756,10 +761,11 @@ go = (docker, servicesConfig, services, options) ->
 
   .then ({container, resolution, completedServicesMap}) ->
     switch resolution
-      when 'detached' then {statusCode: 0}
-      when 'sighup'
+      when 'unattached' then {statusCode: 0}
+
+      when 'reload'
         options.reporter.message()
-        options.reporter.message chalk.gray "#{chalk.bold 'SIGHUP' } received. Rechecking containers.\n"
+        options.reporter.message chalk.gray "#{chalk.bold 'Reload' } requested. Rechecking containers.\n"
 
         # If we're going around again, re-use the same container name, even if
         # auto-created. Strip off the leading '/' though or inspecting by name won't work.
@@ -775,12 +781,26 @@ go = (docker, servicesConfig, services, options) ->
         # primary service is less special.
         go docker, servicesConfig, services.concat(service), options
 
-      when 'attached'
-        maybeRepairSourceOwnership docker, servicesConfig, service, options
-        .then -> finalizeService container, options
-        .then ({container, statusCode}) -> {statusCode}
+      when 'detach'
+        printDetachedMessage(container, options)
+        .then -> {statusCode: null}
 
-      else throw "Unknown resolution: #{resolution}"
+      when 'stop'
+        DockerUtils.stopContainer container
+        .then ({container}) -> 
+          DockerUtils.removeContainer container
+        .then ->
+          # The official status code tends to be -1 when we stop the container forcefully, but
+          # that looks weird so we fake it as a 0.
+          {statusCode: 0}
+
+      when 'end'
+        maybeRepairSourceOwnership docker, servicesConfig, service, options
+        .then ->
+          finalizeContainer container, options
+          .then ({statusCode}) -> {statusCode}
+
+      else throw "UNKNOWN SERVICE RESOLUTION: #{resolution}"
 
   .catch (err) ->
     if err? and err isnt '' and typeof err is 'string' or err.json?
@@ -793,20 +813,6 @@ go = (docker, servicesConfig, services, options) ->
 
     {statusCode: -1}
 
-# Handler for SIGHUP, which will cause Galley to essentially restart. The difference is that
-# it will not remove the primary container, and will not recreate it unless a prerequisite
-# has changed. Useful for after a pull.
-#
-# We mark that a HUP happened and then terminate the input stream. When that socket closes,
-# we close the output stream, which is the trigger to either resolve or reject the attachment
-# promise (which is where execution is tied up during the container's run).
-sighupHandler = ->
-  if sighupHandler.inputStream
-    # We mark ourselves as "fired" so that the attach promise rejects, jumping execution to
-    # go's catch blocks.
-    sighupHandler.fired = true
-    sighupHandler.inputStream.destroy()
-
 module.exports = (args, commandOptions, done) ->
   {service, env, options, serviceConfigOverrides} = parseArgs(args)
 
@@ -818,6 +824,7 @@ module.exports = (args, commandOptions, done) ->
   options.stdout = commandOptions.stdout or new OverlayOutputStream(process.stdout)
 
   options.reporter = commandOptions.reporter or new ConsoleReporter(options.stderr)
+  options.stdinCommandInterceptor = new StdinCommandInterceptor(options.stdin)
 
   {globalConfig, servicesConfig} = ServiceHelpers.processConfig(commandOptions.config, env, options.add)
 
@@ -830,6 +837,7 @@ module.exports = (args, commandOptions, done) ->
 
   docker = new Docker(DockerConfig.connectionConfig())
 
+  sighupHandler = options.stdinCommandInterceptor.sighup.bind(options.stdinCommandInterceptor)
   process.on 'SIGHUP', sighupHandler
 
   prepareServiceSource docker, globalConfig, servicesConfig, service, env, options
@@ -839,6 +847,7 @@ module.exports = (args, commandOptions, done) ->
       rsyncer?.stop()
   .then ({statusCode}) ->
     process.removeListener 'SIGHUP', sighupHandler
+    options.stdinCommandInterceptor.stop()
     done statusCode
   .catch (err) ->
     console.error "UNCAUGHT EXCEPTION IN RUN COMMAND"
