@@ -13,11 +13,7 @@ running too.
 ## Installation
 
 ```
-$ npm install -g gulp-cli
-$ git clone git@github.com:crashlytics/galley.git
-$ npm install
-$ gulp build
-$ npm install -g
+$ npm install -g crashlytics/galley#distribution
 ```
 
 ## Getting Started
