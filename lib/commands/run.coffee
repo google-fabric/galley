@@ -28,6 +28,7 @@ makeCreateOpts = (imageInfo, serviceConfig, servicesMap, options) ->
     'name': serviceConfig.containerName
     'Image': imageInfo.Id
     'Env': DockerArgs.formatEnvVariables(serviceConfig.env)
+    'User': serviceConfig.user
     'Volumes': DockerArgs.formatVolumes(serviceConfig.volumes)
     'HostConfig':
       'Links': DockerArgs.formatLinks(serviceConfig.links, containerNameMap)
@@ -662,7 +663,9 @@ parseArgs = (args) ->
     alias:
       'add': 'a'
       'detach': 'd'
+      'env': 'e'
       'source': 's'
+      'user': 'u'
       'volume': 'v'
       'workdir': 'w'
 
@@ -691,6 +694,7 @@ parseArgs = (args) ->
     attach: true
     # Used to hold --volume values off the command line
     binds: []
+    env: {}
     # We will always want this service to be started completely fresh, to avoid any stale state
     forceRecreate: true
     # Also default to mapping this service's ports to the host
@@ -708,8 +712,18 @@ parseArgs = (args) ->
 
   _.merge serviceConfigOverrides, _.pick argv, [
     'entrypoint'
+    'user'
     'workdir'
   ]
+
+  # Type coercion to an array from either an array or a single value, or undefined.
+  #
+  # Adding to the "env" map will merge these values over any env that the service config has,
+  # rather than replacing the "env" wholesale. This has the desired behavior of the command line
+  # overriding the config values as well.
+  for envVar in [].concat(argv.env or [])
+    [name, val] = envVar.split '='
+    serviceConfigOverrides.env[name] = val
 
   if argv.detach then serviceConfigOverrides.attach = false
   if argv.name? then serviceConfigOverrides.containerName = argv.name

@@ -13,6 +13,7 @@ DEFAULT_SERVICE_CONFIG =
   ports: []
   source: null
   stateful: false
+  user: ''
   volumesFrom: []
 
 ENV_COLLAPSED_ARRAY_CONFIG_KEYS = ['links', 'ports', 'volumesFrom']

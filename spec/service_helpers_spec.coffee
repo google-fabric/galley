@@ -315,6 +315,7 @@ describe 'processConfig', ->
           ports: []
           source: null
           stateful: false
+          user: ''
           volumesFrom: []
         'database':
           binds: []
@@ -327,6 +328,7 @@ describe 'processConfig', ->
           ports: []
           source: null
           stateful: false
+          user: ''
           volumesFrom: []
 
     it 'returns global config', ->

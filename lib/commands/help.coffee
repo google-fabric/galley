@@ -68,6 +68,7 @@ runHelp = ->
   commonOptionsHelp()
   print '  -d, --detach=false             Starts the container in the background and does not'
   print '                                 automatically remove it on exit'
+  print '  -e, --env=[]                   Set environment variables as “NAME=VALUE”'
   print '  --entrypoint=""                Override the image’s default ENTRYPOINT with another'
   print '                                 command. If specified as blank, will override the image'
   print '                                 to not use an entrypoint (Docker default).'
@@ -81,6 +82,7 @@ runHelp = ->
   print '                                 not owned by root'
   print '  --unprotectStateful=false      If true, then “stateful” containers (such as MySQL) may be'
   print '                                 recreated by the --recreate rules.'
+  print '  -u, --user=""                  Username or UID for the primary service’s container'
   print '  -v, --volume=""                Map a host directory in to a container'
   print '                                 Format: hostDir[:containerDir]'
   print '                                 If containerDir is not provided, uses the service’s default'

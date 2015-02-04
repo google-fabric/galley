@@ -106,8 +106,8 @@ describe 'galley', ->
       .then ({stdout, stderr, reporter}) ->
         expect(stdout).toEqual "println 'Hello World!'\n"
 
-    it 'pipes stdin through correctly', ->
-      testCommands.run ["application.#{ENV}", 'wc'], stdin: 'kittens puppies'
+    it 'sets env variables, pipes stdin through correctly', ->
+      testCommands.run ['-e', 'COUNT_CMD=/usr/bin/wc', "application.#{ENV}", '/bin/sh', '-c', '$COUNT_CMD'], stdin: 'kittens puppies'
       .then ({stdout, reporter}) ->
         expect(stdout).toEqual '      0       2      15\n'
 
