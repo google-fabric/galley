@@ -414,7 +414,7 @@ startService = (docker, serviceConfig, service, options, completedServicesMap) -
     ensureContainerStarted container, containerInfo, service, serviceConfig, options, completedServicesMap
     .then ({container}) ->
       options.reporter.finish() unless options.leaveReporterOpen
-      pipeStreamsLoop container, stream, options
+      pipeStreamsLoop container, stream, serviceConfig, options
     .then ({container, resolution}) -> {container, resolution}
 
 # Calls maybePipeStdStreams and then loops to keep calling it if the stream ends while the
@@ -422,7 +422,7 @@ startService = (docker, serviceConfig, service, options, completedServicesMap) -
 # process dies but is restarted by a RestartPolicy.
 #
 # Returns a promise that resolves to maybePipeStdStreams's container/resolution hash.
-pipeStreamsLoop = (container, stream, options) ->
+pipeStreamsLoop = (container, stream, serviceConfig, options) ->
   maybePipeStdStreams container, stream, options
   .then ({container, resolution}) ->
     if resolution is 'end'
@@ -435,9 +435,9 @@ pipeStreamsLoop = (container, stream, options) ->
         # in startService, which is why this call is down here and not at the beginning of
         # pipeStreamsLoop.)
         if info.State.Running or info.State.Restarting
-          maybeAttachStream container, options
+          maybeAttachStream container, serviceConfig
           .then ({container, stream}) ->
-            pipeStreamsLoop container, stream, options
+            pipeStreamsLoop container, stream, serviceConfig, options
         else
           {container, resolution}
     else
