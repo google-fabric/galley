@@ -141,23 +141,6 @@ describe 'galley', ->
           'backend': ['Checking', 'Removing', 'Creating', 'Starting']
           'application': ['Checking', 'Creating', 'Starting']
 
-    # If a container's link is stopped, it gets started and the linking container is restarted
-    # to get the new IP.
-    it 'restarts services with restarted linked-to services', ->
-      testCommands.run ['-a', 'backend-addon', "application.#{ENV}"]
-      .then ->
-        testCommands.exec "docker stop database.#{ENV}"
-      .then ->
-        testCommands.run ['-a', 'backend-addon', "application.#{ENV}"]
-      .then ({stdout, reporter}) ->
-        expect(JSON.parse(stdout)).toEqual APPLICATION_SUCCESS
-
-        expect(reporter.services).toEqual
-          'config': ['Checking', 'Starting']
-          'database': ['Checking', 'Starting']
-          'backend': ['Checking', 'Restarting']
-          'application': ['Checking', 'Creating', 'Starting']
-
     # Test that if the 'backend' service is already running that it gets linked to for
     # application, rather than recreated. We map source over to an alternate directory
     # so that we can see in application that it's actually contacting this service we

@@ -38,6 +38,16 @@ restartContainer = (container, opts = {}) ->
     container.restart opts, (err) ->
       if err then reject(err) else resolve({container})
 
+pauseContainer = (container, opts = {}) ->
+  new RSVP.Promise (resolve, reject) ->
+    container.pause opts, (err) ->
+      if err then reject(err) else resolve({container})
+
+unpauseContainer = (container, opts = {}) ->
+  new RSVP.Promise (resolve, reject) ->
+    container.unpause opts, (err) ->
+      if err then reject(err) else resolve({container})
+
 # Resolves to container and stream
 attachContainer = (container, opts) ->
   new RSVP.Promise (resolve, reject) ->
@@ -104,6 +114,8 @@ module.exports = {
   startContainer
   stopContainer
   restartContainer
+  pauseContainer
+  unpauseContainer
   attachContainer
   resizeContainer
   waitContainer

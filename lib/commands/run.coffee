@@ -121,14 +121,50 @@ maybeInspectContainer = (docker, name) ->
       if err?.statusCode is 404 then {container: null, info: null}
       else throw err
 
-# Helper method to check and see if the running container is missing links that we would
-# configure for a fresh container. We do it just by count, rather than value. Important
-# because deleting a container will remove its link from any container that is linking
-# to it, requiring a complete re-create to connect.
+# Helper method to check and see if the running container's links differ from the ones we would
+# want to create it with. If they do differ, the only recourse is to remove and recreate the
+# container, since you may not (currently) modify links of a running container.
 isLinkMissing = (containerInfo, createOpts) ->
-  runningLinkCount = containerInfo?.HostConfig?.Links?.length or 0
-  createOpts.HostConfig.Links.length isnt runningLinkCount
+  # These are the links as reported back by Docker, which have the format:
+  #  /sourceContainer:/destContainer/alias
+  # We do a bit of splitting and joining to convert them back to /sourceContainer:alias so that
+  # we can compare them directly with the Links parameter we provide to create.
+  currentLinks = _.map (containerInfo?.HostConfig?.Links or []), (link) ->
+    [source, dest] = link.split(':')
+    "#{source}:#{dest.split('/').pop()}"
 
+  # Make a copy since sort mutates.
+  requestedLinks = createOpts.HostConfig.Links.concat()
+
+  currentLinks.sort()
+  requestedLinks.sort()
+
+  not _.isEqual(currentLinks, requestedLinks)
+
+# Compares the paths we expect volumes to have, based on the completedServicesMap, with the paths
+# for those volumes from the containerInfo. If there is a discrepency, the container will need to
+# be recreated in order to get the latest volumes.
+areVolumesOutOfDate = (containerInfo, serviceConfig, completedServicesMap) ->
+  # This becomes an array of objects that map mount points within the container to directories on
+  # the Docker host machine, for each service that our service takes its volumesFrom.
+  volumePathsArray = _.map (serviceConfig.volumesFrom or []), (service) ->
+    completedServicesMap[service].volumePaths
+
+  # Given the above, we can then merge down into an empty object to get a single map of mount
+  # points to paths. We expect that this order is correct if services have colliding VOLUME
+  # declarations, but YMMV. Best not to get in that situation.
+  expectedVolumes = _.merge.apply _, [{}].concat volumePathsArray
+
+  # We only validate the paths from expectedVolumes, rather than doing a full deep equality check,
+  # since the container's *own* VOLUMEs will appear in its Volumes map, along with the ones from
+  # VolumesFrom (which are the only ones we validate).
+  for mountPoint, volumePath of expectedVolumes
+    return true if containerInfo.Volumes[mountPoint] isnt volumePath
+
+  return false
+
+# Returns true if the container's image doesn't match the one from imageInfo, which we looked up
+# from the image the service is configured to run with.
 isContainerImageStale = (containerInfo, imageInfo) ->
   imageInfo.Id isnt containerInfo.Config.Image
 
@@ -141,7 +177,7 @@ containerNeedsRecreate = (containerInfo, imageInfo, serviceConfig, createOpts, o
   if serviceConfig.forceRecreate then true
   else if serviceConfig.stateful and not options.unprotectStateful then false
   else if isLinkMissing(containerInfo, createOpts) then true
-  else if volumesFromFreshlyCreated(serviceConfig, servicesMap) then true
+  else if areVolumesOutOfDate(containerInfo, serviceConfig, servicesMap) then true
   else switch options.recreate
     when 'all' then true
     when 'stale' then isContainerImageStale(containerInfo, imageInfo)
@@ -205,66 +241,31 @@ ensureContainerConfigured = (docker, imageInfo, service, serviceConfig, options,
       options.reporter.succeedTask()
       {container, info}
 
-# Returns true if any of the services that serviceConfig depends on for a link have been
-# "freshlyStarted," which is a signal that this service needs to be restarted to pick up IP or other
-# changes. Does not take into account volumesFrom prereqs, as we don't need to restart if they
-# are just restarted.
-linkFreshlyStarted = (serviceConfig, completedServicesMap) ->
-  for link in serviceConfig.links
-    prereqService = link.split(':')[0]
-    if completedServicesMap[prereqService]?.freshlyStarted
-      return true
-  return false
-
-# Returns true if any of the services that serviceConfig depends on for volumesFrom have been
-# created (e.g. due to being stale). Important so that we can recreate volumes to get new config
-# data.
-#
-# CAVEAT(phopkins): This does not take into account source rsync mapping, though that typically
-# would not affect us since the primary service container is always restarted. Might get wonky
-# if you delete the source container and then SIGHUP, however.
-volumesFromFreshlyCreated = (serviceConfig, completedServicesMap) ->
-  for name in serviceConfig.volumesFrom
-    prereqService = name.split(':')[0]
-    if completedServicesMap[prereqService]?.freshlyCreated
-      return true
-  return false
-
-# Makes sure that the container described by info is started. If the container has link
-# prerequisites that were "freshly started" according to completedServicesMap, restarts to
-# pick up any changes in IPs.
-#
-# Mutates completedServicesMap to add a record for this service with the format:
-#  containerName: name of the service's container
-#  freshlyStarted: true if this method started or restarted the service
+# Makes sure that the container described by info is started, starting it up and unpausing it if
+# necessary.
 #
 # Returns a promise that resolves to a hash of the format:
 #   container: the passed-through container, now started
-ensureContainerStarted = (container, info, service, serviceConfig, options, completedServicesMap) ->
-  # This will resolve to a boolean for whether or not the service was started / restarted or not.
-  promise = null
+#   info: an up-to-date inspection of the container
+ensureContainerRunning = (container, info, service, serviceConfig, options) ->
+  actionPromise = null
 
   unless info.State.Running
     options.reporter.startTask 'Starting'
-    promise = DockerUtils.startContainer(container).then -> true
-
-  else if linkFreshlyStarted(serviceConfig, completedServicesMap)
-    # If one of our prereqs was started, we probably have a stale IP for it, so have Docker
-    # restart us.
-    options.reporter.startTask 'Restarting'
-    promise = DockerUtils.restartContainer(container).then -> true
-
+    actionPromise = DockerUtils.startContainer(container)
+  else if info.State.Paused
+    options.reporter.startTask 'Unpausing'
+    actionPromise = DockerUtils.unpauseContainer(container)
   else
-    promise = RSVP.resolve false
+    # Nothing to do, so short-circuit.
+    return RSVP.resolve {container, info}
 
-  promise
-  .then (freshlyStarted) ->
-    if freshlyStarted
-      options.reporter.succeedTask()
-
-    completedServicesMap[service].freshlyStarted = freshlyStarted
-
-  .then -> {container}
+  actionPromise
+  .then ->
+    DockerUtils.inspectContainer(container)
+  .then ({container, info}) ->
+    options.reporter.succeedTask()
+    {container, info}
 
 # If options.attach is true, calls DockerUtils.attachContainer to get a stream. We do this before
 # the container starts to make sure we get everything.
@@ -370,6 +371,14 @@ maybePipeStdStreams = (container, outputStream, options) ->
       options.stdinCommandInterceptor.removeListener 'command', stdinCommandInterceptorHandler
       outputStream.removeListener 'end', outputStreamEndHandler
 
+updateCompletedServicesMap = (service, serviceConfig, containerInfo, completedServicesMap) ->
+  completedServicesMap[service].containerName = containerInfo.Name
+
+  exportedMounts = _.keys (containerInfo.Config.Volumes or {})
+  exportedPaths = _.pick (containerInfo.Volumes or {}), exportedMounts
+
+  completedServicesMap[service].volumePaths = exportedPaths
+
 # Starts a given service, including downloading, creating, removing, and restarting and whatever
 # else is necessary to get it going. Meant to be called in a loop with prerequisite services
 # already started.
@@ -397,23 +406,23 @@ startService = (docker, serviceConfig, service, options, completedServicesMap) -
   completedServicesMap[service] =
     containerName: null
     freshlyCreated: null
-    freshlyStarted: null
+    volumePaths: null
 
   ensureImageAvailable docker, serviceConfig.image, options
   .then ({image, info: imageInfo}) ->
     ensureContainerConfigured docker, imageInfo, service, serviceConfig, options, completedServicesMap
 
   .then ({container, info: containerInfo}) ->
-    completedServicesMap[service].containerName = containerInfo.Name
-
     # Attach before starting so we can be sure to get all of the output
     maybeAttachStream container, serviceConfig
     .then ({container, stream}) -> {container, stream, info: containerInfo}
 
   .then ({container, stream, info: containerInfo}) ->
-    ensureContainerStarted container, containerInfo, service, serviceConfig, options, completedServicesMap
+    ensureContainerRunning container, containerInfo, service, serviceConfig, options
     .then ({container}) ->
       options.reporter.finish() unless options.leaveReporterOpen
+
+      updateCompletedServicesMap service, serviceConfig, containerInfo, completedServicesMap
       pipeStreamsLoop container, stream, serviceConfig, options
     .then ({container, resolution}) -> {container, resolution}
 
@@ -638,7 +647,8 @@ prepareServiceSource = (docker, globalConfig, config, service, env, options) ->
 # Returns a promise that resolves to the completedServicesMap, with service names keyed to hashes
 # of the format:
 #   containerName: name of the started container
-#   freshlyStarted: true if the container was started / restarted in this Galley run
+#   freshlyCreated: true if the container was created this Galley run
+#   volumePaths: map of container path -> host path for all volumes this container exports
 startServices = (docker, config, services, options) ->
   completedServicesMap = {}
 
