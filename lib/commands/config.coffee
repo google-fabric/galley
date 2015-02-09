@@ -23,20 +23,24 @@ setConfigDir = (configDir) ->
       process.stdout.write 'Creating ~/.galleycfg\n'
       galleycfgHash = configDir: configDir
 
-    fs.writeFile galleycfgPath, JSON.stringify(galleycfgHash, undefined, 2), (err) ->
+    fs.writeFile galleycfgPath, JSON.stringify(galleycfgHash, false, 2), (err) ->
       reject err if err
       resolve()
 
 module.exports = (args, options, done) ->
   argv = minimist args
 
+  configPromise = RSVP.resolve()
   if argv['_'][0] == 'set' and argv['_'][1] == 'configDir'
-    setConfigDir(argv['_'][2])
-    .then ->
-      process.stdout.write chalk.green 'done\n'
-    .catch (err) ->
-      process.stdout.write chalk.red err
-      process.stdout.write chalk.red '\nAborting.\n'
-      process.exit 1
+    configPromise = configPromise.then ->
+      setConfigDir(argv['_'][2])
 
-  done?()
+  configPromise
+  .then ->
+    process.stdout.write chalk.green 'done!\n'
+    done?()
+  .catch (err) ->
+    process.stdout.write chalk.red err
+    process.stdout.write chalk.red '\nAborting.\n'
+    process.exit 1
+
