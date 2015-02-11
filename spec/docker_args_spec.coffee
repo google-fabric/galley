@@ -14,6 +14,13 @@ describe 'DockerArgs', ->
 
       expect(DockerArgs.formatEnvVariables(envVars)).toEqual ['VAR1=value1', 'VAR2=value2']
 
+    it 'excludes nulls but includes empty strings', ->
+      envVars = 
+        'VAR1': ''
+        'VAR2': null
+
+      expect(DockerArgs.formatEnvVariables(envVars)).toEqual ['VAR1=']
+
   describe 'formatLinks', ->
     it 'should format links, looking up container names', ->
       links = ['mongo', 'project-service-mysql:mysql']

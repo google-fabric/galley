@@ -66,7 +66,10 @@ lookupEnvValue = (hash, env, defaultValue) ->
   defaultValue = [] if defaultValue is undefined
 
   [env, namespace] = env.split('.')
-  hash["#{env}.#{namespace}"] || hash[env] || defaultValue
+  val = hash["#{env}.#{namespace}"] || hash[env]
+
+  # Use existance check rather than just falsey so that val can be ''
+  if val? then val else defaultValue
 
 lookupEnvArray = (value, env) ->
   value = value or []
@@ -151,7 +154,7 @@ collapseEnvironment = (configValue, env, defaultValue) ->
   if _.isObject(configValue) and not _.isArray(configValue)
     lookupEnvValue configValue, env, defaultValue
   else
-    configValue or defaultValue
+    if configValue? then configValue else defaultValue
 
 # Generates an array of prerequisite services of a service, from the configuration file.
 # The last element of returned array is the requested service,

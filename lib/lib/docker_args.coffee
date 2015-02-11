@@ -4,8 +4,10 @@ _ = require 'lodash'
 
 # Formats a hash of env variable name to value to the array of VAR=VALUE strings Docker expects
 formatEnvVariables = (envVars) ->
+  out = []
   for name, value of envVars
-    "#{name}=#{value}"
+    out.push "#{name}=#{value}" if value?
+  out
 
 # given links for a single service from the config file
 # and a map of service -> container name

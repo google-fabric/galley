@@ -147,6 +147,7 @@ describe 'collapseServiceConfigEnv', ->
     CONFIG =
       env:
         'HOSTNAME': 'docker'
+        'NOTHING': ''
         'TEST_ONLY_VALUE':
           'test': 'true'
         'RAILS_ENV':
@@ -157,6 +158,7 @@ describe 'collapseServiceConfigEnv', ->
       expect(ServiceHelpers.collapseServiceConfigEnv(CONFIG, 'dev.namespace', [])).toEqual
         env:
           'HOSTNAME': 'docker'
+          'NOTHING': ''
           'TEST_ONLY_VALUE': null
           'RAILS_ENV': 'development'
 
