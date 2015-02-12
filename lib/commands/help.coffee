@@ -26,7 +26,7 @@ pullHelp = ->
   print "#{chalk.bold 'Usage:'} galley pull [OPTIONS] SERVICE[.ENV]"
   print ''
   print 'Downloads the latest version of SERVICE’s image from the Docker registry, as well'
-  print 'as the latest versions of all of SERVICE’s dependencies.'  
+  print 'as the latest versions of all of SERVICE’s dependencies.'
   print ''
   print 'If ENV is provided, uses it as a key to look up dependencies in the Galleyfile.'
   print ''
@@ -37,7 +37,7 @@ pullHelp = ->
   print chalk.bold 'Options'
   print '  -a, --add="SERVICE1,SERVICE2"  Includes the specified add-on service(s) as part of'
   print '                                 this SERVICE’s dependencies when downloading updates'
-  commonOptionsHelp() 
+  commonOptionsHelp()
 
 runHelp = ->
   print "#{chalk.bold 'Usage:'} galley run [OPTIONS] SERVICE[.ENV] [COMMAND [ARG...]]"
@@ -77,13 +77,14 @@ runHelp = ->
   print '                                 “missing-link”) The primary service container is always '
   print '                                 recreated. Containers for services marked “stateful” are '
   print '                                 never recreated unless --unprotectStateful is true.'
-  print '  --repairSourceOwnership=false  After the command exits, ensure that files in the'
+  print '  --repairSourceOwnership false  After the command exits, ensure that files in the'
   print '                                 service’s source directory inside of the container are'
   print '                                 not owned by root'
-  print '  --restart=false                Uses Docker’s RetryPolicy to restart the service’s'
+  print '  --restart false                Uses Docker’s RetryPolicy to restart the service’s'
   print '                                 process when it exits. Useful for cycling Rails apps'
   print '                                 without shutting down the container (which destroys links).'
-  print '  --unprotectStateful=false      If true, then “stateful” containers (such as MySQL) may be'
+  print '  --rsync false                  If true, rsyncs source directory in a volume container.'
+  print '  --unprotectStateful false      If true, then “stateful” containers (such as MySQL) may be'
   print '                                 recreated by the --recreate rules.'
   print '  -u, --user=""                  Username or UID for the primary service’s container'
   print '  -v, --volume=""                Map a host directory in to a container'
@@ -95,7 +96,7 @@ runHelp = ->
 stopEnvHelp = ->
   print "#{chalk.bold 'Usage:'} galley stop-env ENV"
   print ''
-  print 'Stops all running containers that have the “.ENV” suffix.'  
+  print 'Stops all running containers that have the “.ENV” suffix.'
 
 HELPS =
   '_': rootHelp
