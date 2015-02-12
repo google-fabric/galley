@@ -43,6 +43,7 @@ getGalleyConfig = (argv) ->
       galleyConfig = fs.readFileSync path.resolve(homeDir(), '.galleycfg')
       config = JSON.parse galleyConfig.toString()
       galleyFileLocation = config?['configDir']
+      galleyGlobalOptions= _.omit(config, 'configDir')
 
     if !galleyFileLocation
       reject("no Galleyfile path provided, either with --configDir or in .galleycfg")
@@ -66,7 +67,7 @@ getGalleyConfig = (argv) ->
         reject(err)
 
       config = require path.resolve(env.configPath);
-      resolve(config)
+      resolve {config, galleyGlobalOptions}
 
 printHelp = (prefix) ->
   execute.commands.help [], prefix: prefix
@@ -80,14 +81,16 @@ runCommand = (prefix, args, commands) ->
       printHelp prefix
     else
       commandPromise = if prefix[0] == 'config'
-        RSVP.resolve()
+        RSVP.resolve({})
       else
         getGalleyConfig(argv)
       commandPromise
-      .then (galleyFile) ->
-        opts = 
+      .then (config) ->
+        galleyFile = config['config']
+        opts =
           prefix: prefix
           config: galleyFile
+          globalOptions: config['galleyGlobalOptions']
         commands args, opts, (statusCode = 0) -> process.exit statusCode
       .catch (err) ->
         if typeof err is 'string'

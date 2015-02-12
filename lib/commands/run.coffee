@@ -475,7 +475,7 @@ maybeRepairSourceOwnership = (docker, config, service, options) ->
     # We don't set ports or links or anything, as that's not relevant, but we do need the directory
     # bindings to affect files on the host machine.
     'HostConfig':
-      'Binds': formatDirectoryBindings(options, serviceConfig)
+      'Binds': serviceConfig.binds
 
   options.reporter.startTask 'Repairing source ownership'
 
@@ -575,9 +575,6 @@ prepareServiceSource = (docker, globalConfig, config, service, env, options) ->
   unless options.source
     return RSVP.reject '--rsync requires --source flag' if options.rsync
     return RSVP.resolve({})
-
-  unless primaryServiceConfig.source
-    return RSVP.reject '--rsync requires source configuration' 
 
   unless options.rsync
     primaryServiceConfig.binds.push "#{options.source}:#{primaryServiceConfig.source}"
@@ -693,12 +690,21 @@ parseArgs = (args) ->
 
   _.merge options, _.pick argv, [
     'recreate'
-    'repairSourceOwnership'
-    'rsync'
     'unprotectStateful'
   ]
 
-  options.add = ServiceHelpers.normalizeAddonArgs argv.add 
+
+  # provide support for pulling these options from the galleycfg file.
+  # Since minimist automatically fills in "false" for absent boolean flags,
+  # we need to look and see if the flag was actually set in the args,
+  # then decide whether or not to include it in options, allowing
+  # settings in the gallleycfg file to be overriden by command line arguments.
+  if '--rsync' in args
+    options = _.merge options, _.pick argv, 'rsync'
+  if '--repairSourceOwnership' in args
+    options = _.merge options, _.pick argv, 'repairSourceOwnership'
+
+  options.add = ServiceHelpers.normalizeAddonArgs argv.add
   options.source = path.resolve(argv.source) if argv.source
 
   if RECREATE_OPTIONS.indexOf(options.recreate) is -1
@@ -797,7 +803,7 @@ go = (docker, servicesConfig, services, options) ->
 
       when 'stop'
         DockerUtils.stopContainer container
-        .then ({container}) -> 
+        .then ({container}) ->
           DockerUtils.removeContainer container
         .then ->
           # The official status code tends to be -1 when we stop the container forcefully, but
@@ -825,6 +831,7 @@ go = (docker, servicesConfig, services, options) ->
 
 module.exports = (args, commandOptions, done) ->
   {service, env, options, serviceConfigOverrides} = parseArgs(args)
+  options = _.merge(commandOptions['globalOptions'], options)
 
   unless service? and not _.isEmpty(service)
     return help args, commandOptions, done
