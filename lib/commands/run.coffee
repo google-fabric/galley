@@ -803,7 +803,9 @@ go = (docker, servicesConfig, services, options) ->
 
       when 'stop'
         DockerUtils.stopContainer container
-        .then ({container}) ->
+        .then ->
+          maybeRepairSourceOwnership docker, servicesConfig, service, options
+        .then ->
           DockerUtils.removeContainer container
         .then ->
           # The official status code tends to be -1 when we stop the container forcefully, but
