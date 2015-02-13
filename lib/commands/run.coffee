@@ -831,7 +831,7 @@ go = (docker, servicesConfig, services, options) ->
 
 module.exports = (args, commandOptions, done) ->
   {service, env, options, serviceConfigOverrides} = parseArgs(args)
-  options = _.merge(commandOptions['globalOptions'], options)
+  options = _.merge({}, commandOptions['globalOptions'], options)
 
   unless service? and not _.isEmpty(service)
     return help args, commandOptions, done
