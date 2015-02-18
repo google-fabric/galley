@@ -38,6 +38,7 @@
     "minimist": "^1.1.0",
     "rsvp": "^3.0.16",
     "rsync": "^0.4.0",
+    "tcp-proxy": "0.0.1",
     "term-spinner": "^1.0.0"
   }
 }

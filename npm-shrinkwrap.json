@@ -320,6 +320,23 @@
       "from": "https://registry.npmjs.org/rsync/-/rsync-0.4.0.tgz",
       "resolved": "https://registry.npmjs.org/rsync/-/rsync-0.4.0.tgz"
     },
+    "tcp-proxy": {
+      "version": "0.0.1",
+      "from": "https://registry.npmjs.org/tcp-proxy/-/tcp-proxy-0.0.1.tgz",
+      "resolved": "https://registry.npmjs.org/tcp-proxy/-/tcp-proxy-0.0.1.tgz",
+      "dependencies": {
+        "uuid": {
+          "version": "1.4.2",
+          "from": "https://registry.npmjs.org/uuid/-/uuid-1.4.2.tgz",
+          "resolved": "https://registry.npmjs.org/uuid/-/uuid-1.4.2.tgz"
+        },
+        "eventemitter3": {
+          "version": "0.0.0",
+          "from": "https://registry.npmjs.org/eventemitter3/-/eventemitter3-0.0.0.tgz",
+          "resolved": "https://registry.npmjs.org/eventemitter3/-/eventemitter3-0.0.0.tgz"
+        }
+      }
+    },
     "term-spinner": {
       "version": "1.0.0",
       "from": "https://registry.npmjs.org/term-spinner/-/term-spinner-1.0.0.tgz",

@@ -13,6 +13,7 @@ ConsoleReporter = require '../lib/console_reporter'
 DockerArgs = require '../lib/docker_args'
 DockerConfig = require '../lib/docker_config'
 DockerUtils = require '../lib/docker_utils'
+LocalhostForwarder = require '../lib/localhost_forwarder'
 OverlayOutputStream = require '../lib/overlay_output_stream'
 Rsyncer = require '../lib/rsyncer'
 ServiceHelpers = require '../lib/service_helpers'
@@ -419,11 +420,34 @@ startService = (docker, serviceConfig, service, options, completedServicesMap) -
 
   .then ({container, stream, info: containerInfo}) ->
     ensureContainerRunning container, containerInfo, service, serviceConfig, options
-    .then ({container}) ->
+    .then ({container, info: containerInfo}) ->
       options.reporter.finish() unless options.leaveReporterOpen
 
       updateCompletedServicesMap service, serviceConfig, containerInfo, completedServicesMap
-      pipeStreamsLoop container, stream, serviceConfig, options
+
+      forwarderReceipt = null
+
+      maybeForwardPromise = if serviceConfig.localhost
+        DockerUtils.inspectContainer container
+        .then ({info}) ->            
+          # NetworkSettings.Ports looks like:
+          # { '3080/tcp': [ { HostIp: '0.0.0.0', HostPort: '3080' } ],
+          #   '3081/tcp': [ { HostIp: '0.0.0.0', HostPort: '49180' } ] }
+
+          ports = []
+          for source, outs of (containerInfo.NetworkSettings.Ports or {})
+            ports.push parseInt(outs[0].HostPort)
+
+          if ports.length
+            forwarderReceipt = options.localhostForwarder.forward(ports)
+      else
+        RSVP.resolve()
+
+      maybeForwardPromise
+      .then ->
+        pipeStreamsLoop container, stream, serviceConfig, options
+      .finally ->
+        forwarderReceipt.stop() if forwarderReceipt
     .then ({container, resolution}) -> {container, resolution}
 
 # Calls maybePipeStdStreams and then loops to keep calling it if the stream ends while the
@@ -667,6 +691,7 @@ parseArgs = (args) ->
     stopEarly: true
     boolean: [
       'detach'
+      'localhost'
       'repairSourceOwnership'
       'restart'
       'rsync'
@@ -734,6 +759,7 @@ parseArgs = (args) ->
 
   _.merge serviceConfigOverrides, _.pick argv, [
     'entrypoint'
+    'localhost'
     'restart'
     'user'
     'workdir'
@@ -837,12 +863,16 @@ module.exports = (args, commandOptions, done) ->
   unless service? and not _.isEmpty(service)
     return help args, commandOptions, done
 
+  dockerConfig = DockerConfig.connectionConfig()
+
   options.stdin = commandOptions.stdin or process.stdin
   options.stderr = commandOptions.stderr or process.stderr
   options.stdout = commandOptions.stdout or new OverlayOutputStream(process.stdout)
 
   options.reporter = commandOptions.reporter or new ConsoleReporter(options.stderr)
   options.stdinCommandInterceptor = new StdinCommandInterceptor(options.stdin)
+
+  options.localhostForwarder = new LocalhostForwarder(dockerConfig, options.reporter)
 
   {globalConfig, servicesConfig} = ServiceHelpers.processConfig(commandOptions.config, env, options.add)
 
@@ -853,7 +883,7 @@ module.exports = (args, commandOptions, done) ->
   # to "volumesFrom" don't appear as additional prereq services.
   services = ServiceHelpers.generatePrereqServices(service, servicesConfig)
 
-  docker = new Docker(DockerConfig.connectionConfig())
+  docker = new Docker(dockerConfig)
 
   sighupHandler = options.stdinCommandInterceptor.sighup.bind(options.stdinCommandInterceptor)
   process.on 'SIGHUP', sighupHandler
