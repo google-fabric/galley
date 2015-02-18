@@ -573,7 +573,6 @@ prepareServiceSource = (docker, globalConfig, config, service, env, options) ->
   primaryServiceConfig = config[service]
 
   unless options.source
-    return RSVP.reject '--rsync requires --source flag' if options.rsync
     return RSVP.resolve({})
 
   unless options.rsync
