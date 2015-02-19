@@ -1,6 +1,6 @@
 {
   "name": "galley",
-  "version": "0.1.15",
+  "version": "0.2.0",
   "dependencies": {
     "chalk": {
       "version": "0.5.1",
