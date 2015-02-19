@@ -717,16 +717,15 @@ parseArgs = (args) ->
     'unprotectStateful'
   ]
 
-
   # provide support for pulling these options from the galleycfg file.
   # Since minimist automatically fills in "false" for absent boolean flags,
   # we need to look and see if the flag was actually set in the args,
   # then decide whether or not to include it in options, allowing
   # settings in the gallleycfg file to be overriden by command line arguments.
   if '--rsync' in args
-    options = _.merge options, _.pick argv, 'rsync'
+    _.merge options, _.pick argv, 'rsync'
   if '--repairSourceOwnership' in args
-    options = _.merge options, _.pick argv, 'repairSourceOwnership'
+    _.merge options, _.pick argv, 'repairSourceOwnership'
 
   options.add = ServiceHelpers.normalizeAddonArgs argv.add
   options.source = path.resolve(argv.source) if argv.source
@@ -760,10 +759,12 @@ parseArgs = (args) ->
   _.merge serviceConfigOverrides, _.pick argv, [
     'entrypoint'
     'localhost'
-    'restart'
     'user'
     'workdir'
   ]
+
+  if '--restart' in args
+    _.merge serviceConfigOverrides, _.pick argv, 'restart'
 
   # Type coercion to an array from either an array or a single value, or undefined.
   #
