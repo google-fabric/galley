@@ -1,3 +1,4 @@
+_ = require 'lodash'
 charm = require 'charm'
 stream = require 'stream'
 
@@ -15,10 +16,15 @@ class OverlayOutputStream extends stream.Writable
     @charm = charm(@stream)
     @isTTY = @stream.isTTY
     @statusMessage = ''
+    @currentOverlayText = ''
+    @lastStreamColumns = @stream.columns
 
-    # TODO(phopkins): Could try to detect here when the window gets narrower,
-    # causing us to wrap.
-    @stream.on 'resize', @writeOverlay.bind(@)
+    handleResize = =>
+      @writeOverlay()
+      @emit 'resize'
+
+    # Handling wrapping is much more reliable with a bit of debounce
+    @stream.on 'resize', _.debounce handleResize, 100
 
   # Sets a message that permanently sits in the lower-right as the stream
   # scrolls by behind it.
@@ -41,10 +47,38 @@ class OverlayOutputStream extends stream.Writable
     @flashMessage = null
     @writeOverlay()
 
-  clearOverlay: -> 
-    if @hasOverlay
-      @charm.erase('end') 
-      @charm.erase('down')
+  clearOverlay: ->
+    return unless @hasOverlay
+
+    @charm.push()
+
+    # Width from the start of the overlay to the right side of the window. Starts as the length
+    # of the text (since it was printed right-aligned) but we add in any new columns that have
+    # appeared, or subtract any that have disappeared (our text will be wrapped in that case).
+    widthOnLine = @currentOverlayText.length + (@stream.columns - @lastStreamColumns) + 1
+    overlayDidWrap = @lastStreamColumns > @stream.columns + 1
+    @lastStreamColumns = @stream.columns
+
+    @charm.position(@stream.columns - widthOnLine, @stream.rows)
+
+    # If we wrapped, the start of our text is one above the bottom row, so we have to move up.
+    if overlayDidWrap
+      @charm.up(1)
+
+    @charm.delete('char', @currentOverlayText.length + 1)
+
+    # We then delete the line that has the wrapped characters on it. 
+    if overlayDidWrap
+      @charm.down(1)
+      @charm.delete('line', 1)
+
+    @charm.pop()
+
+    # After the cursor position is restored, we scroll a line to cover up the newly blank one,
+    # and have to move the cursor down one line to compensate.
+    if overlayDidWrap
+      @charm.scroll(-1)
+      @charm.down(1)
 
   writeOverlay: ->
     return unless @isTTY
@@ -61,13 +95,14 @@ class OverlayOutputStream extends stream.Writable
       @charm.background('white')
       text = @statusMessage
     else
+      @currentOverlayText = ''
       @charm.pop(true)
       return
+    
+    @currentOverlayText = if text then " #{text} " else ''
 
-    text = " #{text} " if text
-
-    @charm.position(@stream.columns - text.length, @stream.rows)
-    @charm.write(text)
+    @charm.position(@stream.columns - @currentOverlayText.length, @stream.rows)
+    @charm.write(@currentOverlayText)
     @charm.pop(true)
     @hasOverlay = true
 
