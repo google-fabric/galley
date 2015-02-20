@@ -3,6 +3,7 @@ ConsoleReporter = require '../lib/console_reporter'
 Docker = require 'dockerode'
 DockerConfig = require '../lib/docker_config'
 RSVP = require 'rsvp'
+help = require './help'
 
 stopContainer = (name, container, reporter) ->
   new RSVP.Promise (resolve, reject) ->
