@@ -284,16 +284,19 @@ describe 'addDefaultNames', ->
     expect(ServiceHelpers.addDefaultNames(GLOBAL_CONFIG, 'database', 'dev', {image: 'mysql'})).toEqual
       containerName: 'database.dev'
       image: 'mysql'
+      name: 'database'
 
   it 'adds missing image name', ->
     expect(ServiceHelpers.addDefaultNames(GLOBAL_CONFIG, 'application', 'dev', {})).toEqual
       containerName: 'application.dev'
       image: 'docker.example.tv/application'
+      name: 'application'
 
   it 'tolerates no registry', ->
     expect(ServiceHelpers.addDefaultNames({}, 'application', 'dev', {})).toEqual
       containerName: 'application.dev'
       image: 'application'
+      name: 'application'
 
 describe 'processConfig', ->
   describe 'naming', ->
@@ -314,6 +317,7 @@ describe 'processConfig', ->
           env: {}
           image: 'docker.example.tv/application'
           links: []
+          name: 'application'
           ports: []
           restart: false
           source: null
@@ -328,6 +332,7 @@ describe 'processConfig', ->
           entrypoint: null
           image: 'mysql'
           links: []
+          name: 'database'
           ports: []
           restart: false
           source: null

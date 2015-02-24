@@ -111,6 +111,7 @@ collapseServiceConfigEnv = (serviceConfig, env, addons) ->
   collapsedServiceConfig
 
 addDefaultNames = (globalConfig, service, env, serviceConfig) ->
+  serviceConfig.name = service
   serviceConfig.containerName = "#{service}.#{env}"
   serviceConfig.image ||= _.compact([globalConfig.registry, service]).join '/'
   serviceConfig

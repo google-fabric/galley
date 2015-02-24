@@ -33,6 +33,7 @@ makeCreateOpts = (imageInfo, serviceConfig, servicesMap, options) ->
     'User': serviceConfig.user
     'Volumes': DockerArgs.formatVolumes(serviceConfig.volumes)
     'HostConfig':
+      'ExtraHosts': ["#{serviceConfig.name}:127.0.0.1"]
       'Links': DockerArgs.formatLinks(serviceConfig.links, containerNameMap)
       # Binds actually require no formatting. We pre-process when parsing args to make sure that
       # the host path is absolute, but beyond that these are just an array of
