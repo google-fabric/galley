@@ -21,8 +21,10 @@ class ConsoleReporter
     @inLine = true
     @
 
-  startProgress: ->
+  startProgress: (msg) ->
     @maybeSpace()
+    @stream.write msg + ' ' if msg
+    @inLine = true
     new ProgressLine @stream, chalk.gray
 
   succeedTask: (msg = 'done!') ->

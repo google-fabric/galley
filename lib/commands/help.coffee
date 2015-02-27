@@ -39,6 +39,23 @@ pullHelp = ->
   print '                                 this SERVICE’s dependencies when downloading updates'
   commonOptionsHelp()
 
+cleanupHelp = ->
+  print "#{chalk.bold 'Usage:'} galley cleanup [OPTIONS]"
+  print ''
+  print 'Removes stopped containers (and their volumes) and cleans up dangling images to save'
+  print 'disk space.'
+  print ''
+  print 'Containers are only stopped if their names match a service from the current Galleyfile'
+  print 'and that service is not “stateful.”'
+  print ''
+  print chalk.bold 'Options'
+  print '  --unprotectAnonymous false     If true, then stopped containers that don’t match a'
+  print '                                 Galleyfile service are still removed, along with their'
+  print "                                 volumes. #{chalk.bold 'Use with caution.'}"
+  print '  --unprotectStateful false      If true, then “stateful” containers (such as MySQL) will be'
+  print '                                 removed if they’re stopped.'
+  commonOptionsHelp()
+
 runHelp = ->
   print "#{chalk.bold 'Usage:'} galley run [OPTIONS] SERVICE[.ENV] [COMMAND [ARG...]]"
   print ''
@@ -100,6 +117,7 @@ stopEnvHelp = ->
 
 HELPS =
   '_': rootHelp
+  'cleanup': cleanupHelp
   'pull': pullHelp
   'run': runHelp
   'stop-env': stopEnvHelp

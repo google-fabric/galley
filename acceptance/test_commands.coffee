@@ -8,6 +8,7 @@ streamBuffers = require 'stream-buffers'
 
 TestReporter = require '../spec/util/test_reporter'
 
+cleanupCommand = require '../lib/commands/cleanup'
 runCommand = require '../lib/commands/run'
 stopEnvCommand = require '../lib/commands/stop_env'
 
@@ -49,6 +50,18 @@ run = (args, runOpts = {}) ->
           stderr: options.stderr.getContentsAsString("utf8")
           stdout: options.stdout.getContentsAsString("utf8")
 
+cleanup = ->
+  new RSVP.Promise (resolve, reject) ->
+    options =
+      config: GALLEYFILE
+      reporter: new TestReporter
+      # In acceptance tests we don't want to mess with your global Docker state
+      preserveUntagged: true
+
+    cleanupCommand [], options, ->
+      resolve
+        reporter: options.reporter
+
 stopEnv = (env) ->
   new RSVP.Promise (resolve, reject) ->
     stopEnvCommand [env], {reporter: new TestReporter}, resolve
@@ -56,5 +69,6 @@ stopEnv = (env) ->
 module.exports = {
   exec
   run
+  cleanup
   stopEnv
 }

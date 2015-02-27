@@ -72,6 +72,22 @@ describe 'galley', ->
     .then ->
       removeContainers()
 
+  describe 'cleanup', ->
+    it 'removes everything except stateful', ->
+      testCommands.cleanup()
+      .then ({reporter}) ->
+        expect(reporter.services).toEqual
+          'backend.galley-integration': ['Removing']
+          'database.galley-integration': ['Preserving stateful service']
+          'config.galley-integration': ['Removing']
+
+      .finally ->
+        # Need to put things back to how the "before" block sets things up so that the next set
+        # of tests can run.
+        testCommands.run ['-a', 'backend-addon', "application.#{ENV}"]
+        .then ->
+          testCommands.stopEnv ENV
+
   describe 'basics', ->
     # Base test to show that we're starting everything up correctly.
     it 'starts up prereq services', ->

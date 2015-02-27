@@ -12,6 +12,11 @@ inspectImage = (image) ->
     image.inspect (err, info) ->
       if err then reject(err) else resolve({image, info})
 
+removeImage = (image, opts = {}) ->
+  new RSVP.Promise (resolve, reject) ->
+    image.remove opts, (err) ->
+      if err then reject(err) else resolve()
+
 createContainer = (docker, opts) ->
   new RSVP.Promise (resolve, reject) ->
     docker.createContainer opts, (err, container) ->
@@ -107,8 +112,19 @@ downloadImage = (docker, imageName, authConfigFn, progressCb = ->) ->
 
       stream.on 'end', -> resolve()
 
+listContainers = (docker, opts = {}) ->
+  new RSVP.Promise (resolve, reject) ->
+    docker.listContainers opts, (err, infos) ->
+      if err then reject(err) else resolve({infos})
+
+listImages = (docker, opts = {}) ->
+  new RSVP.Promise (resolve, reject) ->
+    docker.listImages opts, (err, infos) ->
+      if err then reject(err) else resolve({infos})
+
 module.exports = {
   inspectImage
+  removeImage
   createContainer
   inspectContainer
   startContainer
@@ -121,4 +137,6 @@ module.exports = {
   waitContainer
   removeContainer
   downloadImage
+  listContainers
+  listImages
 }

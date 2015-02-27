@@ -30,7 +30,11 @@ class TestReporter
     @
 
   completeTask: (msg) ->
-    @services[@currentService].push @lastTask
+    if @lastTask
+      @services[@currentService].push @lastTask
+    else
+      @services[@currentService].push msg
+
     @lastTask = null
     @
 

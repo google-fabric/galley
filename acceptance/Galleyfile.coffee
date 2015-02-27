@@ -25,3 +25,4 @@ module.exports =
 
   'database':
     image: 'galley-integration-database'
+    stateful: true

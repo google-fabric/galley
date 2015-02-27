@@ -10,6 +10,7 @@ execute = (task, options, next) ->
 execute.commands =
   pull: require './commands/pull'
   'stop-env': require './commands/stop_env'
+  cleanup: require './commands/cleanup'
   run: require './commands/run'
 
   help: require './commands/help'
