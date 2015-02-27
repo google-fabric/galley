@@ -17,10 +17,17 @@ class OverlayOutputStream extends stream.Writable
     @isTTY = @stream.isTTY
     @statusMessage = ''
     @currentOverlayText = ''
+
+    # Needed so that the stream's dimensions can be used for resizing the Docker container
+    @columns = @stream.columns
+    @rows = @stream.rows
+
     @lastStreamColumns = @stream.columns
 
     handleResize = =>
       @writeOverlay()
+      @columns = @stream.columns
+      @rows = @stream.rows
       @emit 'resize'
 
     # Handling wrapping is much more reliable with a bit of debounce
