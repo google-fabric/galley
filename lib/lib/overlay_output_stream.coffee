@@ -57,7 +57,7 @@ class OverlayOutputStream extends stream.Writable
   clearOverlay: ->
     return unless @hasOverlay
 
-    @charm.push()
+    @charm.push(true)
 
     # Width from the start of the overlay to the right side of the window. Starts as the length
     # of the text (since it was printed right-aligned) but we add in any new columns that have
@@ -79,7 +79,7 @@ class OverlayOutputStream extends stream.Writable
       @charm.down(1)
       @charm.delete('line', 1)
 
-    @charm.pop()
+    @charm.pop(true)
 
     # After the cursor position is restored, we scroll a line to cover up the newly blank one,
     # and have to move the cursor down one line to compensate.
