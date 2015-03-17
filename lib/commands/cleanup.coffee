@@ -70,7 +70,7 @@ removeImage = (docker, info) ->
   .catch (err) ->
     # Sometimes containers are using untagged images, for example a long-lived stateful container
     # after a newer image has been downloaded.
-    if err.statusCode is 409 then return 
+    if err.statusCode is 409 then return
     else throw err
 
 module.exports = (args, commandOptions, done) ->
@@ -123,6 +123,7 @@ module.exports = (args, commandOptions, done) ->
     .then ->
       progressLine.clear()
       options.reporter.succeedTask()
+      options.reporter.finish()
   .then ->
     done()
   .catch (err) ->
