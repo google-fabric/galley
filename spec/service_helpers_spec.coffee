@@ -3,38 +3,38 @@ _ = require 'lodash'
 
 ServiceHelpers = require '../lib/lib/service_helpers'
 
-describe 'normalizeAddonArgs', ->
+describe 'normalizeMultiArgs', ->
   describe 'with a non-delimited string', ->
     it 'should be an array with one value', ->
-      expect(ServiceHelpers.normalizeAddonArgs('beta')).toEqual ['beta']
+      expect(ServiceHelpers.normalizeMultiArgs('beta')).toEqual ['beta']
 
   describe 'with a delimited string with two values', ->
     it 'should be an array with two values', ->
-      expect(ServiceHelpers.normalizeAddonArgs('beta,other')).toEqual ['beta', 'other']  
+      expect(ServiceHelpers.normalizeMultiArgs('beta,other')).toEqual ['beta', 'other']  
 
   describe 'with a delimited string with a bad leading comma', ->
     it 'should be an array with one value', ->
-      expect(ServiceHelpers.normalizeAddonArgs(',other')).toEqual ['other']
+      expect(ServiceHelpers.normalizeMultiArgs(',other')).toEqual ['other']
 
   describe 'with a delimited string with a bad trailing comma', ->
     it 'should be an array with one value', ->
-      expect(ServiceHelpers.normalizeAddonArgs('beta,')).toEqual ['beta']
+      expect(ServiceHelpers.normalizeMultiArgs('beta,')).toEqual ['beta']
 
   describe 'with an array with one value', ->
     it 'should be an array with one value', ->
-      expect(ServiceHelpers.normalizeAddonArgs(['beta'])).toEqual ['beta']
+      expect(ServiceHelpers.normalizeMultiArgs(['beta'])).toEqual ['beta']
 
   describe 'with an array with one value', ->
     it 'should be an array with one value', ->
-      expect(ServiceHelpers.normalizeAddonArgs(['beta'])).toEqual ['beta']
+      expect(ServiceHelpers.normalizeMultiArgs(['beta'])).toEqual ['beta']
 
   describe 'with an array with two values', ->
     it 'should be an array with two values', ->
-      expect(ServiceHelpers.normalizeAddonArgs(['beta', 'other'])).toEqual ['beta', 'other']
+      expect(ServiceHelpers.normalizeMultiArgs(['beta', 'other'])).toEqual ['beta', 'other']
 
   describe 'with an array with two values, one of which is delimited', ->
     it 'should be an array with three values', ->
-      expect(ServiceHelpers.normalizeAddonArgs(['beta', 'other,third'])).toEqual ['beta', 'other', 'third']
+      expect(ServiceHelpers.normalizeMultiArgs(['beta', 'other,third'])).toEqual ['beta', 'other', 'third']
 
 describe 'normalizeVolumeArgs', ->
   it 'handles a single value', ->

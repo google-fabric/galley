@@ -26,6 +26,9 @@ RECREATE_OPTIONS = ['all', 'stale', 'missing-link']
 makeCreateOpts = (imageInfo, serviceConfig, servicesMap, options) ->
   containerNameMap = _.mapValues(servicesMap, 'containerName')
 
+  volumesFrom = DockerArgs.formatVolumesFrom(serviceConfig.volumesFrom, containerNameMap)
+    .concat(serviceConfig.containerVolumesFrom or [])
+
   createOpts =
     'name': serviceConfig.containerName
     'Image': imageInfo.Id
@@ -39,7 +42,7 @@ makeCreateOpts = (imageInfo, serviceConfig, servicesMap, options) ->
       # the host path is absolute, but beyond that these are just an array of
       # "host_path:container_path"
       'Binds': serviceConfig.binds
-      'VolumesFrom': DockerArgs.formatVolumesFrom(serviceConfig.volumesFrom, containerNameMap)
+      'VolumesFrom': volumesFrom
 
   if serviceConfig.publishPorts
     {portBindings, exposedPorts} = DockerArgs.formatPortBindings(serviceConfig.ports)
@@ -693,6 +696,7 @@ parseArgs = (args) ->
     boolean: [
       'detach'
       'localhost'
+      'publish-all'
       'repairSourceOwnership'
       'restart'
       'rsync'
@@ -702,6 +706,7 @@ parseArgs = (args) ->
       'add': 'a'
       'detach': 'd'
       'env': 'e'
+      'publish-all': 'P'
       'source': 's'
       'user': 'u'
       'volume': 'v'
@@ -728,7 +733,7 @@ parseArgs = (args) ->
   if '--repairSourceOwnership' in args
     _.merge options, _.pick argv, 'repairSourceOwnership'
 
-  options.add = ServiceHelpers.normalizeAddonArgs argv.add
+  options.add = ServiceHelpers.normalizeMultiArgs argv.add
   options.source = path.resolve(argv.source) if argv.source
 
   if RECREATE_OPTIONS.indexOf(options.recreate) is -1
@@ -740,6 +745,10 @@ parseArgs = (args) ->
     attach: true
     # Used to hold --volume values off the command line
     binds: []
+    # List of containers to bring in volumes from. Not overlain on serviceConfig's volumesFrom
+    # directly since that is a list of services that are started as pre-reqs, while these are
+    # assumed to be containers.
+    containerVolumesFrom: []
     env: {}
     # We will always want this service to be started completely fresh, to avoid any stale state
     forceRecreate: true
@@ -764,8 +773,14 @@ parseArgs = (args) ->
     'workdir'
   ]
 
+  if argv['volumes-from']
+    _.merge serviceConfigOverrides.containerVolumesFrom, ServiceHelpers.normalizeMultiArgs(argv['volumes-from'])
+
   if '--restart' in args
     _.merge serviceConfigOverrides, _.pick argv, 'restart'
+
+  if '--publish-all' in args or '-P' in args
+    serviceConfigOverrides.publishPorts = argv['publish-all']
 
   # Type coercion to an array from either an array or a single value, or undefined.
   #
@@ -875,6 +890,8 @@ module.exports = (args, commandOptions, done) ->
   options.stdinCommandInterceptor = new StdinCommandInterceptor(options.stdin)
 
   options.localhostForwarder = new LocalhostForwarder(dockerConfig, options.reporter)
+
+  throw "Missing env for service #{service}. Format: <service>.<env>" unless env
 
   {globalConfig, servicesConfig} = ServiceHelpers.processConfig(commandOptions.config, env, options.add)
 

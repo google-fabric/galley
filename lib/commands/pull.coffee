@@ -25,7 +25,7 @@ parseArgs = (args) ->
     'add'
   ]
 
-  options.add = ServiceHelpers.normalizeAddonArgs options.add
+  options.add = ServiceHelpers.normalizeMultiArgs options.add
 
   {service, env, options}
 

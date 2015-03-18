@@ -19,8 +19,9 @@ DEFAULT_SERVICE_CONFIG =
 
 ENV_COLLAPSED_ARRAY_CONFIG_KEYS = ['links', 'ports', 'volumesFrom']
 
-# Accept a value for addon options and normalize it to handle multiple comma delimited values in strings
-# while ensuring that the return value is always a flat array of Strings
+# Accept a value for argv options and normalize it to handle multiple comma delimited values in strings
+# while ensuring that the return value is always a flat array of Strings. Used by both -a and
+# --volumes-from.
 #
 # e.g.:
 #
@@ -32,7 +33,7 @@ ENV_COLLAPSED_ARRAY_CONFIG_KEYS = ['links', 'ports', 'volumesFrom']
 # ['beta', 'other,third'] -> ['beta', 'other', 'third']
 # 'beta,' -> ['beta']
 # ',beta' -> ['beta']
-normalizeAddonArgs = (addonOptions) ->
+normalizeMultiArgs = (addonOptions) ->
   toReturn = addonOptions
 
   # minimist will turn repeatable args (like --add) into an array, but in case there's just one,
@@ -193,7 +194,7 @@ generatePrereqsRecursively = (service, servicesConfig, pendingServices = [], fou
 
 module.exports = {
   DEFAULT_SERVICE_CONFIG
-  normalizeAddonArgs
+  normalizeMultiArgs
   normalizeVolumeArgs
   addDefaultNames
   generatePrereqServices
