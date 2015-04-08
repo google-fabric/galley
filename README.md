@@ -1,4 +1,41 @@
 ## Overview
+
+Galley is a command-line tool for orchestrating Docker containers in local development and test environments. 
+
+### What makes Galley different?
+
+Galley was built to match our development process: multiple teams sharing a few dozen services across a
+variety of source code repositories. What is under active development by one team might just be a dependency to
+another, so Galley gives engineers the flexibility to start the service or services they’re working with using
+local source changes, while using the repository’s pre-built images for any depenencies.
+
+Galley keeps service dependencies in a central configuration file so that 
+
+### Features
+
+ - Runs Docker containers 
+ - Runtime control over whether to mount local source code into containers
+ - Custom environments to easily run development and test containers side-by-side in isolation
+ - Automatically re-uses running containers to support developing on multiple services simultaneously
+ - Prevents “stateful” containers like databases from being wiped through recreates
+ - JavaScript-based configuration allows for higher-order service definitions
+
+Galley also has special support for running under a VM, such as when using boot2docker on Mac OS X:
+
+ - Built-in `rsync` support for massively-improved disk performance when mapping in source code
+ - Port forwarding to let other machines or mobile devices connect to containers in the VM
+
+
+### Galley’s Docker defaults
+
+Galley uses a handful of defaults when working with Docker containers that we’ve found are appropriate for
+development and testing. You should be aware of these, especially if you have a lot of other Docker experience.
+If these aren’t working out for you, let us know; we always want to learn about new use cases!
+
+ - If Galley is being run in via a TTY, the primary service’s container is, too (`-t`)
+ - The primary service container is always run with STDIN allocated (`-t`)
+
+
 Galley is a tool for managing docker dependencies.
 Docker makes it easy to connect two containers together, through '--links', but managing
 what services your infrastructure uses, and how those services are connected together can
