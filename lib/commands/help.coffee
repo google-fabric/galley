@@ -7,6 +7,7 @@ print = console.warn
 
 commonOptionsHelp = ->
   print '  --configDir=""                 Specify a directory to search for the Galleyfile'
+  print '  --help                         Show this help message'
 
 rootHelp = ->
   print "#{chalk.bold 'Usage:'} galley COMMAND [arg...]"
@@ -32,9 +33,8 @@ pullHelp = ->
   print ''
   print 'If ENV is provided, uses it as a key to look up dependencies in the Galleyfile.'
   print ''
-  print "#{chalk.bold 'Note:'} Does not affect existing containers, running or not. You must"
-  print 'use Docker to remove containers created by "galley run" for those commands to create'
-  print 'fresh containers with these updated images.'
+  print "#{chalk.bold 'Note:'} Does not affect existing containers, running or not.
+  print 'When you run galley run, non-stateful services will be restarted to pick up new images'
   print ''
   print chalk.bold 'Options'
   print '  -a, --add="SERVICE1,SERVICE2"  Includes the specified add-on service(s) as part of'
@@ -58,6 +58,17 @@ cleanupHelp = ->
   print '                                 removed if they’re stopped.'
   commonOptionsHelp()
 
+configHelp = ->
+  print "#{chalk.bold 'Usage:'} galley config COMMAND SETTING"
+  print ''
+  print 'Sets up your ~/.galleycfg file'
+  print ''
+  print chalk.bold 'Command'
+  print ' set                             Used to set values for particular config settings '
+  print chalk.bold 'Settings'
+  print ' configDir [path]                Directory containing the Galleyfile'
+  print ' rsync [false]                   Default behavior for source mapping with the rsync container'
+
 runHelp = ->
   print "#{chalk.bold 'Usage:'} galley run [OPTIONS] SERVICE[.ENV] [COMMAND [ARG...]]"
   print ''
@@ -78,7 +89,7 @@ runHelp = ->
   print 'If run from a TTY, starts the container as a TTY as well. Otherwise, binds the'
   print 'container’s STDOUT and STDERR to the process’s STDOUT and STDERR.'
   print ''
-  print 'If ENV is provided, uses it as a suffix for container names, and as a key to look up'
+  print 'The provided ENV is used as a suffix for container names, and as a key to look up'
   print 'dependencies in the Galleyfile.'
   print ''
   print chalk.bold 'Options'
@@ -103,7 +114,7 @@ runHelp = ->
   print '  --repairSourceOwnership false  After the command exits, ensure that files in the'
   print '                                 service’s source directory inside of the container are'
   print '                                 not owned by root'
-  print '  --restart=false                Uses Docker’s RetryPolicy to restart the service’s'
+  print '  --restart=false                Uses Docker’s restart policy to restart the service’s'
   print '                                 process when it exits. Useful for cycling Rails apps'
   print '                                 without shutting down the container (which destroys links).'
   print '  --rsync=false                  If true, starts up the “rsync” container from the'
@@ -128,12 +139,19 @@ stopEnvHelp = ->
   print ''
   print 'Stops all running containers that have the “.ENV” suffix.'
 
+versionHelp = ->
+  print "#{chalk.bold 'Usage:'} galley version"
+  print ''
+  print 'Provides the currently running version of galley'
+
 HELPS =
   '_': rootHelp
   'cleanup': cleanupHelp
+  'config': configHelp
   'pull': pullHelp
   'run': runHelp
   'stop-env': stopEnvHelp
+  'version': versionHelp
 
 printHelp = (args, helps) ->
   if _.isFunction helps

@@ -433,7 +433,7 @@ startService = (docker, serviceConfig, service, options, completedServicesMap) -
 
       maybeForwardPromise = if serviceConfig.localhost
         DockerUtils.inspectContainer container
-        .then ({info}) ->            
+        .then ({info}) ->
           # NetworkSettings.Ports looks like:
           # { '3080/tcp': [ { HostIp: '0.0.0.0', HostPort: '3080' } ],
           #   '3081/tcp': [ { HostIp: '0.0.0.0', HostPort: '49180' } ] }

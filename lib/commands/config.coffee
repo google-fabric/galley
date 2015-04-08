@@ -5,6 +5,7 @@ minimist = require 'minimist'
 RSVP = require 'rsvp'
 chalk = require 'chalk'
 _ = require 'lodash'
+help = require './help'
 
 
 newConfigHashItem = (option, value) ->
@@ -40,7 +41,13 @@ setConfigOption = (option, value) ->
       resolve()
 
 module.exports = (args, options, done) ->
-  argv = minimist args
+  argv = minimist args,
+    boolean: [
+      'help'
+    ]
+
+  if argv._.length isnt 2 or argv.help
+    return help args, options, done
 
   configPromise = RSVP.resolve()
   if argv['_'][0] == 'set'
