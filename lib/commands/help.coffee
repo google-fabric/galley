@@ -33,10 +33,10 @@ pullHelp = ->
   print ''
   print 'If ENV is provided, uses it as a key to look up dependencies in the Galleyfile.'
   print ''
-  print "#{chalk.bold 'Note:'} Does not affect existing containers, running or not.
-  print 'When you run galley run, non-stateful services will be restarted to pick up new images'
+  print "#{chalk.bold 'Note:'} Does not affect existing containers, running or not."
+  print 'When you run galley run, non-stateful services will be restarted to pick up new images.'
   print ''
-  print chalk.bold 'Options'
+  print "#{chalk.bold 'Options'}"
   print '  -a, --add="SERVICE1,SERVICE2"  Includes the specified add-on service(s) as part of'
   print '                                 this SERVICE’s dependencies when downloading updates'
   commonOptionsHelp()
@@ -50,7 +50,7 @@ cleanupHelp = ->
   print 'Containers are only stopped if their names match a service from the current Galleyfile'
   print 'and that service is not “stateful.”'
   print ''
-  print chalk.bold 'Options'
+  print "#{chalk.bold 'Options'}"
   print '  --unprotectAnonymous false     If true, then stopped containers that don’t match a'
   print '                                 Galleyfile service are still removed, along with their'
   print "                                 volumes. #{chalk.bold 'Use with caution.'}"
