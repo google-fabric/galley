@@ -2,24 +2,27 @@
 Galley is a tool for managing docker dependencies.
 Docker makes it easy to connect two containers together, through '--links', but managing
 what services your infrastructure uses, and how those services are connected together can
-be challenging with docker alone. Galley bridges that gap.
+be challenging with Docker alone. Galley bridges that gap, by letting you start exactly the
+containers you need to develop and test your services.
 
 Galley lets you think about your code in terms of 'services' rather than just containers.
-A service is simply a single container that depends on a fixed set of other containers.
+A service is simply a single container that depends on a fixed set of other containers, and the set of
+dependencies may vary between environments (dev, test, integration, etc).
 
-When you start, create, or run a service, galley knows to make sure that its linked dependencies are
-running too.
+When you start, create, or run a service, for a particular environment galley knows to make sure that
+its linked dependencies are running too.
 
 Using galley is a two step process:
+
 1. Write a Galleyfile defining your applications, dependencies, and environments, and point galley at the file.
   - Galleyfiles are executable JS (or coffeescript), so you can treat your Galleyfile like code: DRY, version controlled, and composable.
 
 1. Run `galley run your-application.environment`
   - Galley respects familiar docker syntax
-  - Supports volume mapping, exposing ports, attaching and detaching running containers, and setting environment varialbes
+  - Supports volume mapping, exposing ports, attaching and detaching running containers, and setting environment variables
   - Can map local change into the container FAST, using a special rsync container. Invaluable for doing development with docker on a Mac without paying the NFS performance cost.
 
-Use `galley pull your-application.environment` to bring all the images your application depends to to their latest version.
+Use `galley pull your-application.environment` to bring all the images your application depends on to their latest version.
 
 Use `galley cleanup` to remove dangling images, and remove stopped, non-stateful containers (preserves your databases!)
 
