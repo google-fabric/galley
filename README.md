@@ -49,11 +49,20 @@ specify different dependencies between “dev” and “test” modes.
 
 ### `run`
 
-**Example:** `galley run www.dev`
+**Examples:**
+```
+# Starts the www service with its dev dependencies. The image’s default CMD is run.
+galley run www.dev
+
+# Maps the current directory in as the “source” directory, uses test dependencies, and runs “rake spec”.
+galley run -s . www.test rake spec
+```
 
 Starts up the given service, using the environment both to name containers and to affect the service configuration.
 Dependencies, either `links` or `volumesFrom`, will be started up first and recursively. Containers will be named
-“<service>.<env>”.
+“<service>.<env>”. STDOUT, STDERR, and STDIN are piped from the terminal to the container.
+
+When Galley exits it will remove the primary service container by default, but leave any dependencies running.
 
 Galley will *always* recreate the container for the named (“primary”) service. For dependencies, Galley will look
 for existing containers that match the “<service>.<env>” naming pattern, starting them if necessary. It will
@@ -68,7 +77,12 @@ Nevertheless, if a service is configured to be “stateful” in the Galleyfile,
 useful for database services that you’d like to avoid wiping in most cases. The `--recreate` and 
 `--unprotectStateful` command line options affect these behaviors. See `galley run --help` for more info.
 
+Similar to `docker run`, you can provide a command and arguments after the service name to run those instead of the
+image’s default CMD. In this case, Galley will let Docker name the container randomly, to avoid naming conflicts
+with any other instances of that service that are running.
 
+If you’ve configured a “source” directory for the primary service, you can use the `-s` option to map a local
+directory to it. (This is more convienient than `-v` for the common case of always mapping to the same destination.)
 
 Run also takes a number of parameters that are the equivalent to `docker run` parameters. See `galley run --help`
 for a complete list.
