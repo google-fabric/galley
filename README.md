@@ -1,21 +1,27 @@
 ## Overview
 
-Galley is a command-line tool for orchestrating Docker containers in local development and test environments. 
+Galley is a command-line tool for orchestrating Docker containers in local development and test environments. Galley
+automatically starts a container’s dependencies and connects it to them with Links and VolumesFrom mappings. Use
+Galley to start up a web server that connects to a database. Then use it to start up a web server, its database, an 
+intermediate data service, its database, some queues, worker processes, and the monitoring server they all connect 
+to.
 
 ### What makes Galley different?
 
-Galley was built to match our development process: multiple teams sharing a few dozen services across a
+Galley was built to match our development process: multiple teams sharing a dozen or more services across a
 variety of source code repositories. What is under active development by one team might just be a dependency to
 another, so Galley gives engineers the flexibility to start the service or services they’re working with using
-local source changes, while using the repository’s pre-built images for any depenencies.
+local source changes, while using the Docker repository’s pre-built images for any depenencies.
 
-Galley keeps service dependencies in a central configuration file so that 
+Galley keeps service dependencies in a central “Galleyfile” configuration so that you can always start up any 
+service in your system, along with any necessary transitive dependencies.
 
 ### Features
 
- - Runs Docker containers 
+ - Run Docker containers, linking them to their dependencies
  - Runtime control over whether to mount local source code into containers
  - Custom environments to easily run development and test containers side-by-side in isolation
+ - “Addons” to define optional dependencies or configuration for services
  - Automatically re-uses running containers to support developing on multiple services simultaneously
  - Prevents “stateful” containers like databases from being wiped through recreates
  - JavaScript-based configuration allows for higher-order service definitions
@@ -25,15 +31,64 @@ Galley also has special support for running under a VM, such as when using boot2
  - Built-in `rsync` support for massively-improved disk performance when mapping in source code
  - Port forwarding to let other machines or mobile devices connect to containers in the VM
 
+And, for continuous integration machines:
 
-### Galley’s Docker defaults
+ - A `--repairSourceOwnership` flag keeps the container from generating files that only root can delete
+
+
+## Galley concepts
+
+Before using Galley, you define a set of **services** in a central **Galleyfile**. These definitions specify what
+Docker options to use to create a container for that service (image, links, volumes, *&tc.*).
+
+When you use `galley run <service>.<env>`, you provide a **primary service** that you want to interact with, and the
+**environment** to run it in. Environments are used in service definitions to vary the configuration, for example to
+specify different dependencies between “dev” and “test” modes.
+
+## Commands
+
+### `run`
+
+**Example:** `galley run www.dev`
+
+Starts up the given service, using the environment both to name containers and to affect the service configuration.
+Dependencies, either `links` or `volumesFrom`, will be started up first and recursively. Containers will be named
+“<service>.<env>”.
+
+Galley will *always* recreate the container for the named (“primary”) service. For dependencies, Galley will look
+for existing containers that match the “<service>.<env>” naming pattern, starting them if necessary. It will
+recreate them if:
+
+ - their source image doesn’t match the current image for their image name (*e.g.* if an image was built or pulled
+   since first starting the container)
+ - their current `Links` don’t include everything in the current configuration (typically because a container they 
+   depend upon has been recreated, but sometimes because an addon changes the configuration)
+
+Nevertheless, if a service is configured to be “stateful” in the Galleyfile, Galley will not recreate it. This is
+useful for database services that you’d like to avoid wiping in most cases. The `--recreate` and 
+`--unprotectStateful` command line options affect these behaviors. See `galley run --help` for more info.
+
+
+
+Run also takes a number of parameters that are the equivalent to `docker run` parameters. See `galley run --help`
+for a complete list.
+
+### Docker defaults
 
 Galley uses a handful of defaults when working with Docker containers that we’ve found are appropriate for
 development and testing. You should be aware of these, especially if you have a lot of other Docker experience.
 If these aren’t working out for you, let us know; we always want to learn about new use cases!
 
- - If Galley is being run in via a TTY, the primary service’s container is, too (`-t`)
- - The primary service container is always run with STDIN allocated (`-t`)
+(In these cases, the “primary service” is the one specified on the command line.)
+
+ - If Galley is being run in a TTY, the primary service’s container is, too (`docker run -t`)
+ - The primary service container is always run with STDIN allocated (`docker run -i`)
+ - The primary service container is always removed when Galley stops (`docker run --rm`)
+ - Volumes are always removed when removing a container (`docker rm -v`)
+
+
+
+
 
 
 Galley is a tool for managing docker dependencies.
