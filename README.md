@@ -1,17 +1,17 @@
 ## Overview
 
-Galley is a command-line tool for orchestrating Docker containers in local development and test environments. Galley
-automatically starts a container’s dependencies and connects it to them with Links and VolumesFrom mappings. Use
-Galley to start up a web server that connects to a database. Then use it to start up a web server, its database, an 
-intermediate data service, its database, some queues, worker processes, and the monitoring server they all connect 
-to.
+Galley is a command-line tool for orchestrating [Docker](https://www.docker.com/) containers in local development
+and test environments. Galley automatically starts a container’s dependencies and connects it to them with Docker’s
+Links and VolumesFrom mappings. Use Galley to start up a web server that connects to a database. Then, use it to
+start up a web server, its database, an intermediate data service, its database, some queues, worker processes, and
+the monitoring server they all connect to.
 
 ### What makes Galley different?
 
-Galley was built to match our development process: multiple teams sharing a dozen or more services across a
+Galley was built to support Crashlytics’ internal process: multiple teams sharing a dozen or more services across a
 variety of source code repositories. What is under active development by one team might just be a dependency to
 another, so Galley gives engineers the flexibility to start the service or services they’re working with using
-local source changes, while using the Docker repository’s pre-built images for any depenencies.
+local source changes, while using the Docker repository’s pre-built images for any dependencies.
 
 Galley keeps service dependencies in a central “Galleyfile” configuration so that you can always start up any 
 service in your system, along with any necessary transitive dependencies.
@@ -20,13 +20,14 @@ service in your system, along with any necessary transitive dependencies.
 
  - Run Docker containers, linking them to their dependencies
  - Runtime control over whether to mount local source code into containers
- - Custom environments to easily run development and test containers side-by-side in isolation
- - “Addons” to define optional dependencies or configuration for services
- - Automatically re-uses running containers to support developing on multiple services simultaneously
- - Prevents “stateful” containers like databases from being wiped through recreates
- - JavaScript-based configuration allows for higher-order service definitions
+ - Custom environments to easily run isolated development and test containers side-by-side
+ - “Addons” to define optional configuration for services
+ - Automatically re-use running containers to support developing on multiple services simultaneously
+ - Prevent “stateful” containers like databases from being wiped through recreates
+ - JavaScript-based configuration for higher-order service definitions
 
-Galley also has special support for running under a VM, such as when using boot2docker on Mac OS X:
+Galley also has special support for running under a VM, such as when using [boot2docker](http://boot2docker.io/)
+on Mac OS X:
 
  - Built-in `rsync` support for massively-improved disk performance when mapping in source code
  - Port forwarding to let other machines or mobile devices connect to containers in the VM
@@ -35,7 +36,6 @@ And, for continuous integration machines:
 
  - A `--repairSourceOwnership` flag keeps the container from generating files that only root can delete
  - Cleanup command to free up disk space from unused images
-
 
 ## Galley concepts
 
@@ -51,6 +51,12 @@ configuration for a namespaced environment, one for the base environment is used
 
 ## Getting started
 
+### Installation
+
+*Documentation needed*
+
+### Writing a Galleyfile
+
 After you’ve installed Galley, you’ll need to write a Galleyfile. A Galleyfile is a JavaScript (or CoffeeScript)
 module that exports a configuration hash that defines your services and their dependencies.
 
@@ -64,10 +70,7 @@ module.exports =
     registry: 'docker.example.biz'
 
   'config-files': {}
-
-  'beanstalk':
-    ports:
-      'dev': ['11300:11300']
+  'beanstalk': {}
 
   'www-mysql':
     image: 'mysql'
@@ -89,7 +92,9 @@ module.exports =
 
 The above file defines a Rails “www” service that depends on a MySQL DB in test and both a MySQL DB and a beanstalk
 queue in development. Additionally, it expects to have a “config-files” volume mounted in. The container’s source
-code is kept in `/code/www`, so you can use `galley run -s .` to map local files over it.
+code is kept in `/code/www`, so you can use `galley run -s .` to map a local directory over it.
+
+### Running Galley
 
 Once you have a Galleyfile, point Galley at that file’s directory by running:
 ```
@@ -132,10 +137,11 @@ delete and recreate them if:
    depend upon has been recreated, but sometimes because an addon changes the configuration)
 
 That being said, if a service is configured to be “stateful” in the Galleyfile, Galley will not recreate it. This is
-useful for database services that you’d generally like to avoid wiping. The `--recreate` and 
-`--unprotectStateful` command line options affect these behaviors; see `galley run --help` for more info.
+useful for database services that would get wiped if that happened, losing useful development state. The
+`--recreate` and  `--unprotectStateful` command line options affect these behaviors; see `galley run --help` for
+more info.
 
-Similar to with  `docker run`, you can provide a command and arguments after the service name to run those instead 
+Similar to with `docker run`, you can provide a command and arguments after the service name to run those instead 
 of the image’s default CMD. In this case, Galley will let Docker name the container randomly, to avoid naming 
 conflicts with any other instances of that service that are running.
 
@@ -143,7 +149,8 @@ You can use the `-a` option to enable any “addons” configured for your servi
 bring in additional dependencies or modify environment variables.
 
 If you’ve configured a “source” directory for the primary service, you can use the `-s` option to map a local
-directory to it. (This is more convienient than `-v` for the common case of always mapping to the same destination.)
+directory to it. (This is more convienient than `-v` for the common case of regularly mapping to the same
+destination.)
 
 Run also takes a number of parameters that are the equivalent to `docker run` parameters. See `galley run --help`
 for a complete list.
@@ -187,7 +194,6 @@ Removes any stopped containers that match Galley’s naming conventions, provide
 services. Removes their volumes as well. See `galley cleanup --help` for options that affect what’s removed.
 
 Also deletes any dangling Docker images on the machine, to free up disk space.
-
 
 ## Galleyfile reference
 
@@ -247,7 +253,7 @@ values (`links`, `ports`, `volumesFrom`) are concatenated with the service’s b
 **command**: Command to override the default from the image. Can either be a string, which Docker will run with
 `/bin/sh -c`, or an array of strings, which should be an executable and its arguments.
 
-**entrypoint**: Override the default entrypoint from the image. String that matches an executable in the container.
+**entrypoint**: Override the default entrypoint from the image. String path for an executable in the container.
 
 **env**: Hash of environment variable names and their values to set in the container. If the values are themselves
 hashes, they are assumed to be from Galley “env” to value.
@@ -260,6 +266,7 @@ hashes, they are assumed to be from Galley “env” to value.
 
     # "galley run my-app.dev" will set $RAILS_ENV to "development"
     # "galley run my-app.test" will set $RAILS_ENV to "test"
+    # "galley run my-app.test.cucumber" will also set $RAILS_ENV to "test"
     # "galley run my-app.other" will not have $RAILS_ENV defined
     'RAILS_ENV':
       'dev': 'development'
@@ -292,19 +299,22 @@ a hash of environment name to array of links.
 `"container_port:host_port"` or `"container_port"`. If a host port is ommitted, Docker will assign a random host
 port to proxy in. Alternately, can be a hash of environment name to array of port values.
 
-**restart**: If true, applies a Docker `RestartPolicy` of “always” to the container. Default is false.
+**restart**: Boolean. If true, applies a Docker `RestartPolicy` of “always” to the container. Default is false.
 
 **source**: String path to a source code directory inside the container. If `-s` is provided to `galley run`, Galley
 will bind that directory to the source directory in the container.
 
-**stateful**: If true, Galley will not remove the container in `galley run` or `galley cleanup`, even if it is
-stale or missing links. Can be overridden by the `--unprotectStateful` flag. Default is false.
+**stateful**: Boolean. If true, Galley will not remove the container in `galley run` or `galley cleanup`, even if it
+is stale or missing links. Can be overridden for a command by the `--unprotectStateful` flag. Default is false.
 
 **user**: User to run the container as.
 
 **volumesFrom**: Array of services whose containers should be volume-mounted into this service’s container.
 Alternately, can be a hash of environment name to array of service names.
 
+### .galleycfg reference
+
+*Documentation needed*
 
 ## Additional Info
 
@@ -318,6 +328,8 @@ Alternately, can be a hash of environment name to array of service names.
  - Use constants and loops in your Galleyfile if they’ll make your configuration clearer and easier to maintain.
 
 ### rsync support
+
+*Documentation needed*
 
 ### Docker defaults
 
@@ -336,7 +348,8 @@ If these aren’t working out for you, let us know; we always want to learn abou
 
 ## Contributing
 
-We welcome GitHub issues and pull requests. Please match the existing code’s style, conventions, and test coverage.
+We welcome GitHub issues and pull requests. Please match the existing CoffeeScript style, conventions, and test
+coverage.
 
 Galley uses `gulp` for building:
 ```
@@ -344,27 +357,3 @@ $ gulp              # watches the Galley directory for changes to compile
 $ gulp test         # runs mocha specs
 $ gulp acceptance   # builds the acceptance images and runs some acceptance tests
 ```
-
-
-
-##### You might want to use galley when...
-Galley is awesome for putting together an environment for doing your day-to-day development work. Galley helps you keep your test and development
-environments isolated, while allowing you to effectively emulate production. It helps you manage running containers, providing shortcuts for starting, stopping, and removing just the containers you want. Never accidentally destroy your database again!
-
-You might set up galley when:
- - You want to move your development environment from Vagrant to Docker
- - You want to run your integration tests locally, against a wide range of services, each with their own dependencies
- - You have many different applications, each with shared dependencies
-
-## Installation
-
-```
-$ npm install -g 'git+ssh://git@github.com:crashlytics/galley#distribution'
-```
-
-## Tech Details
- - galley is written in coffeescript with node.js
- - built with gulp
- - tested with mocha
-
-
