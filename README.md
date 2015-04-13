@@ -1,9 +1,9 @@
 ## Overview
 
 Galley is a command-line tool for orchestrating [Docker](https://www.docker.com/) containers in local development
-and test environments. Galley automatically starts a container’s dependencies and connects it to them with Docker’s
+and test environments. Galley automatically starts a container’s dependencies and connects them with Docker’s
 Links and VolumesFrom mappings. Use Galley to start up a web server that connects to a database. Then, use it to
-start up a web server, its database, an intermediate data service, its database, some queues, worker processes, and
+start up a web server, its database, an intermediate data service and its database, some queues, worker processes, and
 the monitoring server they all connect to.
 
 ### What makes Galley different?
@@ -114,7 +114,7 @@ Test your new Galley setup with some commands:
 
 **Examples:**
 ```
-# Starts the www service with its dev dependencies. The image’s default CMD is run.
+# Starts the www service with its dev dependencies. Runs the image’s default CMD.
 galley run www.dev
 
 # Maps the current directory in as the “source” directory, uses test dependencies, and runs “rake spec”.
@@ -141,7 +141,7 @@ useful for database services that would get wiped if that happened, losing usefu
 `--recreate` and  `--unprotectStateful` command line options affect these behaviors; see `galley run --help` for
 more info.
 
-Similar to with `docker run`, you can provide a command and arguments after the service name to run those instead 
+Similar to `docker run`, you can provide a command and arguments after the service name to run those instead 
 of the image’s default CMD. In this case, Galley will let Docker name the container randomly, to avoid naming 
 conflicts with any other instances of that service that are running.
 
@@ -181,7 +181,7 @@ Pulls the latest image for the given primary service and any transitive dependen
 environment. Can take `-a` to include addons in the dependency tree.
 
 Pull just updates the local Docker images, it doesn’t cause any changes to running containers. But, a follow-up
-`galley run` can and will recreate any non-“stateful” containers for dependencies whose images have changed.
+`galley run` will recreate any non-“stateful” containers for dependencies whose images have changed.
 
 ### `cleanup`
 
