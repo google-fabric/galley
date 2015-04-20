@@ -6,6 +6,7 @@ util = require 'util'
 path = require 'path'
 minimist = require 'minimist'
 spin = require 'term-spinner'
+running = require 'is-running'
 
 help = require './help'
 
@@ -33,6 +34,8 @@ makeCreateOpts = (imageInfo, serviceConfig, servicesMap, options) ->
     'name': serviceConfig.containerName
     'Image': imageInfo.Id
     'Env': DockerArgs.formatEnvVariables(serviceConfig.env)
+    'Labels':
+      'io.fabric.galley.primary': 'false'
     'User': serviceConfig.user
     'Volumes': DockerArgs.formatVolumes(serviceConfig.volumes)
     'HostConfig':
@@ -50,6 +53,11 @@ makeCreateOpts = (imageInfo, serviceConfig, servicesMap, options) ->
     unless exposedPorts is {}
       createOpts['ExposedPorts'] = exposedPorts
       createOpts['HostConfig']['PublishAllPorts'] = true
+
+  # Note container labels and values (as of Docker 1.6) can only be strings
+  if serviceConfig.primary?
+    createOpts['Labels']['io.fabric.galley.primary'] = 'true'
+    createOpts['Labels']['io.fabric.galley.pid'] = "#{process.pid}"
 
   if serviceConfig.command?
     createOpts['Cmd'] = serviceConfig.command
@@ -188,6 +196,14 @@ containerNeedsRecreate = (containerInfo, imageInfo, serviceConfig, createOpts, o
     when 'stale' then isContainerImageStale(containerInfo, imageInfo)
     else false
 
+# Checks the container metadata contained in labels to determine if the container was started by
+# another galley process as the primary container.
+containerIsCurrentlyGalleyManaged = (containerInfo) ->
+  if containerInfo.Config.Labels? and containerInfo.Config.Labels['io.fabric.galley.primary'] is 'true'
+    pid = parseInt(containerInfo.Config.Labels['io.fabric.galley.pid'])
+    if pid is not process.pid
+      running pid
+
 # If the given container exists, but options are provided, removes the given container. We want to
 # clear existing containers so that we can start fresh ones with the correct options configuration.
 #
@@ -199,6 +215,13 @@ maybeRemoveContainer = (container, containerInfo, imageInfo, serviceConfig, crea
       options.reporter.completeTask 'not found.'
       resolve {container: null}
     else if containerNeedsRecreate(containerInfo, imageInfo, serviceConfig, createOpts, options, servicesMap)
+      # check to see if the container that needs to be recreated is already managed by
+      # galley (somewhere else). If it is, we can't recreate it, since it will bust that galley
+      # session. Instead, just error out.
+      if containerIsCurrentlyGalleyManaged(containerInfo)
+        reject "Cannot be recreated, container is managed by another Galley process.\n
+          Check that all images are up to date, and that addons requested here match
+          those in the managed Galley container."
       options.reporter.completeTask('needs recreate').startTask('Removing')
 
       # When we want to get rid of a container, we want it gone. Use force to take it out if running.
@@ -754,6 +777,7 @@ parseArgs = (args) ->
     forceRecreate: true
     # Also default to mapping this service's ports to the host
     publishPorts: true
+    primary: true
 
   # The first element of argv._ is the service name, so if there's anything past that it means that
   # the user is specifying a command. In that case, we pull in that command, make the container

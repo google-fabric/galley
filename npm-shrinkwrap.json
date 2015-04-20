@@ -1,6 +1,6 @@
 {
   "name": "galley",
-  "version": "0.2.0",
+  "version": "0.2.5",
   "dependencies": {
     "chalk": {
       "version": "0.5.1",
@@ -211,6 +211,11 @@
       "from": "https://registry.npmjs.org/home-dir/-/home-dir-1.0.0.tgz",
       "resolved": "https://registry.npmjs.org/home-dir/-/home-dir-1.0.0.tgz"
     },
+    "is-running": {
+      "version": "1.0.5",
+      "from": "is-running@*",
+      "resolved": "https://registry.npmjs.org/is-running/-/is-running-1.0.5.tgz"
+    },
     "liftoff": {
       "version": "2.0.1",
       "from": "https://registry.npmjs.org/liftoff/-/liftoff-2.0.1.tgz",
@@ -302,7 +307,7 @@
     },
     "lodash": {
       "version": "3.2.0",
-      "from": "lodash@3.2.0",
+      "from": "https://registry.npmjs.org/lodash/-/lodash-3.2.0.tgz",
       "resolved": "https://registry.npmjs.org/lodash/-/lodash-3.2.0.tgz"
     },
     "minimist": {
