@@ -88,7 +88,10 @@ class StdinCommandInterceptor extends events.EventEmitter
         when CTRL_R then @_trigger 'reload'
     else
       @previousKey = key
-      @inputStream.write(key)
+      # In Node 0.12.2 calling setImmediate is important for avoiding an occasional blocking read
+      # to STDIN that locks up the program until more input comes in.
+      setImmediate =>
+        @inputStream.write(key)
 
   # Called from outside by a SIGHUP handler. Has the same effect as CTRL-P CTRL-R, which causes
   # Galley to recheck all containers.

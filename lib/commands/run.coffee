@@ -656,7 +656,7 @@ prepareServiceSource = (docker, globalConfig, config, service, env, options) ->
   .then ({container, info}) ->
     # Now that we have the container running, make sure that the primary service will pull in its
     # volume for source code.
-    primaryServiceConfig.volumesFrom.push info.Name
+    primaryServiceConfig.containerVolumesFrom.push info.Name
 
     options.reporter.startTask 'Syncing'
     progressLine = options.reporter.startProgress()

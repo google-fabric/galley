@@ -32,6 +32,7 @@ class OverlayOutputStream extends stream.Writable
 
     # Handling wrapping is much more reliable with a bit of debounce
     @stream.on 'resize', _.debounce handleResize, 100
+    @stream.on 'drain', => @emit 'drain'
 
   # Sets a message that permanently sits in the lower-right as the stream
   # scrolls by behind it.
@@ -116,9 +117,19 @@ class OverlayOutputStream extends stream.Writable
   # Proxy our writes through to the underlying stream, wrapped in
   # making our status disappear and re-appear.
   _write: (chunk, encoding, cb) ->
-    @clearOverlay()
+    # We only redraw if the chunk contains a newline. This is a compromise from redrawing every
+    # time, to workaround issues with TTY push and pop. When drawing every time, there's a case
+    # where the cursor can be put just outside the terminal window (easy to do with rspec's one-dot-
+    # at-a-time output). Pushing that position and popping it ends up bringing the cursor back
+    # inside the window, so the line never ends up wrapping.
+    #
+    # With this solution, we allow writes on one line (and possibly terminal code shenanigans) to
+    # overwrite the charm, but preserve the wrapping behavior for one-dot-at-a-time output.
+    redraw = chunk.toString().indexOf('\n') isnt -1
+
+    @clearOverlay() if redraw
     ret = @stream.write chunk, encoding, cb
-    @writeOverlay()
+    @writeOverlay() if redraw
     ret
 
   end: ->
