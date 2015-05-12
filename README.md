@@ -98,7 +98,7 @@ code is kept in `/code/www`, so you can use `galley run -s .` to map a local dir
 
 Once you have a Galleyfile, point Galley at that file’s directory by running:
 ```
-galley config set configDir /path/to/folder…
+galley config configDir /path/to/folder…
 ```
 
 Test your new Galley setup with some commands:
