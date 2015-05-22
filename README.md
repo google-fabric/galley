@@ -13,7 +13,7 @@ variety of source code repositories. What is under active development by one tea
 another, so Galley gives engineers the flexibility to start the service or services they’re working with using
 local source changes, while using the Docker repository’s pre-built images for any dependencies.
 
-Galley keeps service dependencies in a central “Galleyfile” configuration so that you can always start up any 
+Galley keeps service dependencies in a central “Galleyfile” configuration so that you can always start up any
 service in your system, along with any necessary transitive dependencies.
 
 ### Features
@@ -98,7 +98,7 @@ code is kept in `/code/www`, so you can use `galley run -s .` to map a local dir
 
 Once you have a Galleyfile, point Galley at that file’s directory by running:
 ```
-galley config configDir /path/to/folder…
+galley config set configDir /path/to/folder…
 ```
 
 Test your new Galley setup with some commands:
@@ -133,7 +133,7 @@ delete and recreate them if:
 
  - their source image doesn’t match the current image for their image name (*e.g.* if an image was built or pulled
    since first starting the container)
- - their current `Links` don’t include everything in the current configuration (typically because a container they 
+ - their current `Links` don’t include everything in the current configuration (typically because a container they
    depend upon has been recreated, but sometimes because an addon changes the configuration)
 
 That being said, if a service is configured to be “stateful” in the Galleyfile, Galley will not recreate it. This is
@@ -141,8 +141,8 @@ useful for database services that would get wiped if that happened, losing usefu
 `--recreate` and  `--unprotectStateful` command line options affect these behaviors; see `galley run --help` for
 more info.
 
-Similar to `docker run`, you can provide a command and arguments after the service name to run those instead 
-of the image’s default CMD. In this case, Galley will let Docker name the container randomly, to avoid naming 
+Similar to `docker run`, you can provide a command and arguments after the service name to run those instead
+of the image’s default CMD. In this case, Galley will let Docker name the container randomly, to avoid naming
 conflicts with any other instances of that service that are running.
 
 You can use the `-a` option to enable any “addons” configured for your services (primary or otherwise). Addons can
@@ -247,7 +247,7 @@ module.exports =
 `links`, `ports`, `volumesFrom`, and `env`. When the addon is enabled via the `-a` flag to `run` or `pull`, array
 values (`links`, `ports`, `volumesFrom`) are concatenated with the service’s base configuration (and any other addons). `env` values are merged, with addons taking precidence over the base values.
 
-**binds**: Array of “Bind” strings to map host directories into the container. String format matches Docker: 
+**binds**: Array of “Bind” strings to map host directories into the container. String format matches Docker:
 `"host_path:container_path"`
 
 **command**: Command to override the default from the image. Can either be a string, which Docker will run with

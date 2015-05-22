@@ -46,7 +46,7 @@ module.exports = (args, options, done) ->
       'help'
     ]
 
-  if argv._.length isnt 2 or argv.help
+  if argv._.length isnt 3 or argv.help
     return help args, options, done
 
   configPromise = RSVP.resolve()
