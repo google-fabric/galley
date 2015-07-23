@@ -23,13 +23,37 @@ module.exports =
 
     dockerOpts
 
-  # Checks the user's .dockercfg file for login information. .dockercfg is a JSON hash, keyed by
-  # registry host name. Within the host's config is an 'auth' key whose value is base64-encoded
-  # "username:password" for the server.
+  # Checks the user's docker config file for login information. The file is a JSON hash, and there are two
+  # versions, in two different locations.
+  #
+  # The old version in ~/.dockercfg (pre-docker 1.7) is keyed by registry host name.
+  # {
+  #   "docker.crash.io": {
+  #     "auth": "base64user:pass",
+  #     "email": "email@email"
+  #   }
+  # }
+  #
+  # The new version in ~/.docker/config.json
+  # {
+  #   "auths": {
+  #     "docker.crash.io": {
+  #       "auth": "base64user:pass",
+  #       "email": "email@email"
+  #     }
+  #   }
+  # }
   authConfig: (host) ->
     hostConfig = try
-      configFile = fs.readFileSync path.resolve(homeDir(), '.dockercfg')
-      config = JSON.parse configFile.toString()
+      dockerOneSevenConfig = path.resolve homeDir(), '.docker/config.json'
+      config = if fs.existsSync(dockerOneSevenConfig)
+        configFile = fs.readFileSync dockerOneSevenConfig
+        config = JSON.parse configFile.toString()
+        config['auths']
+      else
+        configFile = fs.readFileSync path.resolve(homeDir(), '.dockercfg')
+        JSON.parse configFile.toString()
+
       config[host]
     catch e
       # If file doesn't exist don't explode, just don't have auth
