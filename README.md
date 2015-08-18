@@ -53,17 +53,20 @@ configuration for a namespaced environment, one for the base environment is used
 
 ### Installation
 
-*Documentation needed*
+`npm install -g galley-cli`
 
 ### Writing a Galleyfile
 
-After you’ve installed Galley, you’ll need to write a Galleyfile. A Galleyfile is a JavaScript (or CoffeeScript)
+After you’ve installed Galley, you’ll need to write a Galleyfile. A Galleyfile is a JavaScript
 module that exports a configuration hash that defines your services and their dependencies.
 
-Galley expects the Galleyfile to be in a common location, rather than in a specific service’s repository.
+Several services are expected to share a common Galleyfile that defines the dependencies among
+them. You should put your Galleyfile in a common place, and then symlink to it from a common
+ancestor directory for your services. The `galley` CLI tool will search for a Galleyfile recursively
+from the directory it's run in.
 
 ```coffeescript
-# Example Galleyfile for a small Rails app.
+# Example Galleyfile.coffee for a small Rails app.
 module.exports =
 
   CONFIG:
@@ -90,16 +93,28 @@ module.exports =
     volumesFrom: ['config-files']
 ```
 
+```javascript
+// CoffeeScript-bootstrapping Galleyfile.js
+require('coffee-script/register');
+module.exports = require('./Galleyfile.coffee');
+```
+
 The above file defines a Rails “www” service that depends on a MySQL DB in test and both a MySQL DB and a beanstalk
 queue in development. Additionally, it expects to have a “config-files” volume mounted in. The container’s source
 code is kept in `/code/www`, so you can use `galley run -s .` to map a local directory over it.
 
-### Running Galley
+Once you have a Galleyfile, create a small NPM package for it that depends on `galley`:
+```
+npm init
+npm install --save galley
+```
 
-Once you have a Galleyfile, point Galley at that file’s directory by running:
+Then, from a common ancestor directory of your service's source directories:
 ```
-galley config set configDir /path/to/folder…
+ln -s ../../path/to/Gallefile.js .
 ```
+
+### Running Galley
 
 Test your new Galley setup with some commands:
 ```

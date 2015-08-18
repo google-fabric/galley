@@ -6,7 +6,6 @@ minimist = require 'minimist'
 print = console.warn
 
 commonOptionsHelp = ->
-  print '  --configDir=""                 Specify a directory to search for the Galleyfile'
   print '  --help                         Show this help message'
 
 rootHelp = ->
@@ -66,7 +65,6 @@ configHelp = ->
   print chalk.bold 'Command'
   print ' set                             Used to set values for particular config settings '
   print chalk.bold 'Settings'
-  print ' configDir [path]                Directory containing the Galleyfile'
   print ' rsync [false]                   Default behavior for source mapping with the rsync container'
 
 runHelp = ->
