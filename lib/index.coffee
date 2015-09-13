@@ -10,6 +10,7 @@ commands =
   'stop-env': require './commands/stop_env'
   cleanup: require './commands/cleanup'
   run: require './commands/run'
+  list: require './commands/list'
 
   help: require './commands/help'
   version: require './commands/version'

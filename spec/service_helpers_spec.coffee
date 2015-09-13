@@ -10,7 +10,7 @@ describe 'normalizeMultiArgs', ->
 
   describe 'with a delimited string with two values', ->
     it 'should be an array with two values', ->
-      expect(ServiceHelpers.normalizeMultiArgs('beta,other')).toEqual ['beta', 'other']  
+      expect(ServiceHelpers.normalizeMultiArgs('beta,other')).toEqual ['beta', 'other']
 
   describe 'with a delimited string with a bad leading comma', ->
     it 'should be an array with one value', ->
@@ -168,7 +168,7 @@ describe 'collapseServiceConfigEnv', ->
         links: ['database', 'addon-service']
 
       describe 'without env', ->
-        CONFIG = 
+        CONFIG =
           addons:
             'my-addon':
               links: ['addon-service']
@@ -178,7 +178,7 @@ describe 'collapseServiceConfigEnv', ->
           expect(ServiceHelpers.collapseServiceConfigEnv(CONFIG, 'unused', ['my-addon'])).toEqual EXPECTED
 
       describe 'with addon env', ->
-        CONFIG = 
+        CONFIG =
           addons:
             'my-addon':
               links:
@@ -189,7 +189,7 @@ describe 'collapseServiceConfigEnv', ->
           expect(ServiceHelpers.collapseServiceConfigEnv(CONFIG, 'dev', ['my-addon'])).toEqual EXPECTED
 
       describe 'with base env', ->
-        CONFIG = 
+        CONFIG =
           addons:
             'my-addon':
               links: ['addon-service']
@@ -200,7 +200,7 @@ describe 'collapseServiceConfigEnv', ->
           expect(ServiceHelpers.collapseServiceConfigEnv(CONFIG, 'dev', ['my-addon'])).toEqual EXPECTED
 
       describe 'with addon namespaced env', ->
-        CONFIG = 
+        CONFIG =
           addons:
             'my-addon':
               links:
@@ -227,7 +227,7 @@ describe 'collapseServiceConfigEnv', ->
               'HOSTNAME': 'docker-addon'
               'CUSTOM': 'custom-value'
 
-      describe 'with a base env', ->  
+      describe 'with a base env', ->
         CONFIG =
           env:
             'HOSTNAME': 'docker'
@@ -297,6 +297,35 @@ describe 'addDefaultNames', ->
       containerName: 'application.dev'
       image: 'application'
       name: 'application'
+
+describe 'listServicesWithEnvs', ->
+  describe 'envs', ->
+    CONFIG =
+      service:
+        image: 'my-image'
+        links:
+          'dev': ['service']
+          'dev.namespace': ['better-service']
+          'test': ['mock-service']
+        env:
+          'HOSTNAME': 'docker'
+          'TEST_ONLY_VALUE':
+            'test': 'true'
+          'RAILS_ENV':
+            'dev': 'development'
+            'test': 'test'
+            'other': 'foo'
+        ports:
+          'dev': ['3000']
+        volumesFrom:
+          'test': ['container']
+      application:
+        image: 'application'
+
+    it 'processes services', ->
+      expect(ServiceHelpers.listServicesWithEnvs(CONFIG)).toEqual
+        'application': []
+        'service': ['dev', 'dev.namespace', 'test', 'other']
 
 describe 'processConfig', ->
   describe 'naming', ->

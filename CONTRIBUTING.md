@@ -13,7 +13,7 @@ Make sure your machine is set up for galley, the getting started guide in the [R
 
 Test your local galley changes
 
-    npm watch # compiles and watches your local galley
+    gulp watch # compiles and watches your local galley
     npm link # from the galley repo, symlinks your local version of galley to be globally installed
     cd ../directory-with-galleyfile
     npm link galley # symlinks from your local node modules to your global galley

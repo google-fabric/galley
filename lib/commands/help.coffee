@@ -24,6 +24,16 @@ rootHelp = ->
   print ''
   print 'Run "galley COMMAND --help" for more information on a command.'
 
+listHelp = ->
+  print "#{chalk.bold 'Usage:'} galley list"
+  print ''
+  print 'Parses your Galleyfile and lists the available services and '
+  print 'the environments for which they have defined behavior.'
+  print ''
+  print 'Services that do not have environments listed behave the same way'
+  print 'under any given environment (e.g. same links, same ports).'
+  print ''
+
 pullHelp = ->
   print "#{chalk.bold 'Usage:'} galley pull [OPTIONS] SERVICE[.ENV]"
   print ''
@@ -147,6 +157,7 @@ HELPS =
   'cleanup': cleanupHelp
   'config': configHelp
   'pull': pullHelp
+  'list': listHelp
   'run': runHelp
   'stop-env': stopEnvHelp
   'version': versionHelp

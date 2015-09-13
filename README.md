@@ -49,6 +49,8 @@ specify different dependencies between “dev” and “test” modes.
 Environments can also have a namespace, such as `.dev.1` or `test.cucumber`. If a service does not have a
 configuration for a namespaced environment, one for the base environment is used instead.
 
+Services can be unparametrized on environment. For these services, the service will use the same links/ports/environment values for any environment.
+
 ## Getting started
 
 ### Installation
