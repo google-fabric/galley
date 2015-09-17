@@ -3,7 +3,6 @@ _ = require 'lodash'
 path = require 'path'
 
 DEFAULT_SERVICE_CONFIG =
-  addons: {}
   binds: []
   command: null
   entrypoint: null
@@ -81,11 +80,9 @@ lookupEnvArray = (value, env) ->
 
 # serviceConfig: a hash from the Galleyfile for a particular service
 # env: string of the form "env" or "env.namespace"
-# addons: array of strings that are serviceConfig "addon" keys
 #
-# Returns serviceConfig flattened down to only the given env, and merged with any appropriate
-# addons.
-collapseServiceConfigEnv = (serviceConfig, env, addons) ->
+# Returns serviceConfig flattened down to only the given env
+collapseServiceConfigEnv = (serviceConfig, env) ->
   collapsedServiceConfig = _.mapValues serviceConfig, (value, key) ->
     if ENV_COLLAPSED_ARRAY_CONFIG_KEYS.indexOf(key) isnt -1
       collapseEnvironment value, env, []
@@ -96,20 +93,33 @@ collapseServiceConfigEnv = (serviceConfig, env, addons) ->
     else
       value
 
-  for addonName in addons
-    addon = serviceConfig.addons?[addonName] or {}
-    for key in ENV_COLLAPSED_ARRAY_CONFIG_KEYS
-      if addon[key]?
-        addonValue = collapseEnvironment addon[key], env, []
-        collapsedServiceConfig[key] = (collapsedServiceConfig[key] or []).concat addonValue
-
-    if addon.env?
-      addonEnv = _.mapValues addon.env, (envValue, envKey) ->
-        collapseEnvironment envValue, env, null
-      collapsedServiceConfig.env = _.merge {}, collapsedServiceConfig.env, addonEnv
-
-  delete collapsedServiceConfig.addons
   collapsedServiceConfig
+
+# service: the service who's serviceConfig is being examined
+# env: the requested env
+# serviceConfig: the service config, collapsed by env for this service
+# requestedAddons: the addons requested in the command
+# globalAddons: the possible addons that can be requested
+#
+# Given a service, an env, and addons, this adds the requested addons to the serviceConfig
+# including links, ports, volumes and env variables. Supports addons with environments.
+combineAddons = (service, env, serviceConfig, requestedAddons, globalAddons) ->
+  for addonName in requestedAddons
+    addon = globalAddons[addonName]
+    throw "Addon #{addonName} not found in ADDONS list in Galleyfile" unless addon?
+
+    serviceAddon = addon[service]
+    if serviceAddon?
+      for key in ENV_COLLAPSED_ARRAY_CONFIG_KEYS
+        if serviceAddon[key]?
+          addonValue = collapseEnvironment serviceAddon[key], env, []
+          serviceConfig[key] = serviceConfig[key].concat addonValue
+
+        if serviceAddon.env?
+          addonEnv = _.mapValues serviceAddon.env, (envValue, envKey) ->
+            collapseEnvironment envValue, env, null
+          serviceConfig.env = _.merge {}, serviceConfig.env, addonEnv
+  serviceConfig
 
 addDefaultNames = (globalConfig, service, env, serviceConfig) ->
   serviceConfig.name = service
@@ -132,8 +142,9 @@ addDefaultNames = (globalConfig, service, env, serviceConfig) ->
 #
 # Callers of this method therefore need not worry about any further parameterization based on env
 # or addons.
-processConfig = (galleyfileValue, env, addons) ->
+processConfig = (galleyfileValue, env, requestedAddons) ->
   globalConfig = galleyfileValue.CONFIG or {}
+  globalAddons = galleyfileValue.ADDONS or {}
 
   servicesConfig = _.mapValues galleyfileValue, (serviceConfig, service) ->
     return if service is 'CONFIG'
@@ -142,7 +153,8 @@ processConfig = (galleyfileValue, env, addons) ->
 
     serviceConfig = _.merge {}, DEFAULT_SERVICE_CONFIG, serviceConfig
 
-    serviceConfig = collapseServiceConfigEnv serviceConfig, env, addons
+    serviceConfig = collapseServiceConfigEnv serviceConfig, env
+    serviceConfig = combineAddons service, env, serviceConfig, requestedAddons, globalAddons
     serviceConfig = addDefaultNames globalConfig, service, env, serviceConfig
     serviceConfig
 
@@ -223,6 +235,7 @@ module.exports = {
   addDefaultNames
   generatePrereqServices
   collapseEnvironment
+  combineAddons
   collapseServiceConfigEnv
   processConfig
   listServicesWithEnvs

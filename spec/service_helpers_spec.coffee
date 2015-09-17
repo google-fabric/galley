@@ -137,7 +137,7 @@ describe 'collapseServiceConfigEnv', ->
         'test': ['container']
 
     it 'collapses down to just the environment', ->
-      expect(ServiceHelpers.collapseServiceConfigEnv(CONFIG, 'dev.namespace', [])).toEqual
+      expect(ServiceHelpers.collapseServiceConfigEnv(CONFIG, 'dev.namespace')).toEqual
         image: 'my-image'
         links: ['better-service']
         ports: ['3000']
@@ -155,96 +155,88 @@ describe 'collapseServiceConfigEnv', ->
           'test': 'test'
 
     it 'paramerizes the env variables', ->
-      expect(ServiceHelpers.collapseServiceConfigEnv(CONFIG, 'dev.namespace', [])).toEqual
+      expect(ServiceHelpers.collapseServiceConfigEnv(CONFIG, 'dev.namespace')).toEqual
         env:
           'HOSTNAME': 'docker'
           'NOTHING': ''
           'TEST_ONLY_VALUE': null
           'RAILS_ENV': 'development'
 
+describe 'combineAddons', ->
   describe 'addons', ->
     describe 'array parameter merging', ->
       EXPECTED =
         links: ['database', 'addon-service']
 
       describe 'without env', ->
+        ADDONS =
+          'my-addon':
+            'service':
+                links: ['addon-service']
         CONFIG =
-          addons:
-            'my-addon':
-              links: ['addon-service']
           links: ['database']
 
-        it 'merges addons array parameters', ->
-          expect(ServiceHelpers.collapseServiceConfigEnv(CONFIG, 'unused', ['my-addon'])).toEqual EXPECTED
+        it 'merges addons array parameters with addon', ->
+          expect(ServiceHelpers.combineAddons('service', 'dev', CONFIG, ['my-addon'], ADDONS)).toEqual EXPECTED
 
       describe 'with addon env', ->
-        CONFIG =
-          addons:
-            'my-addon':
+        ADDONS =
+          'my-addon':
+            'service':
               links:
                 'dev': ['addon-service']
+        CONFIG =
           links: ['database']
 
-        it 'merges addons array parameters', ->
-          expect(ServiceHelpers.collapseServiceConfigEnv(CONFIG, 'dev', ['my-addon'])).toEqual EXPECTED
-
-      describe 'with base env', ->
-        CONFIG =
-          addons:
-            'my-addon':
-              links: ['addon-service']
-          links:
-            'dev': ['database']
-
-        it 'merges addons array parameters', ->
-          expect(ServiceHelpers.collapseServiceConfigEnv(CONFIG, 'dev', ['my-addon'])).toEqual EXPECTED
+        it 'merges addons array parameters with addon env', ->
+          expect(ServiceHelpers.combineAddons('service', 'dev', CONFIG, ['my-addon'], ADDONS)).toEqual EXPECTED
 
       describe 'with addon namespaced env', ->
-        CONFIG =
-          addons:
-            'my-addon':
+        ADDONS =
+          'my-addon':
+            'service':
               links:
                 'dev.namespace': ['addon-service']
-          links:
-            'dev': ['database']
+        CONFIG =
+          links: ['database']
 
-        it 'merges addons array parameters', ->
-          expect(ServiceHelpers.collapseServiceConfigEnv(CONFIG, 'dev.namespace', ['my-addon'])).toEqual EXPECTED
+        it 'merges addons array parameters with namespaced addon env', ->
+          expect(ServiceHelpers.combineAddons('service', 'dev.namespace', CONFIG, ['my-addon'], ADDONS)).toEqual EXPECTED
 
     describe 'env parameter merging', ->
       describe 'with no base env', ->
-        CONFIG =
-          addons:
-            'my-addon':
+        ADDONS =
+          'my-addon':
+            'service':
               env:
                 'HOSTNAME': 'docker-addon'
                 'CUSTOM':
                   'dev.namespace': 'custom-value'
 
-        it 'paramerizes the env variables', ->
-          expect(ServiceHelpers.collapseServiceConfigEnv(CONFIG, 'dev.namespace', ['my-addon'])).toEqual
+        CONFIG = {}
+        it 'parametrizes the env variables', ->
+          expect(ServiceHelpers.combineAddons('service', 'dev.namespace', CONFIG, ['my-addon'], ADDONS)).toEqual
             env:
               'HOSTNAME': 'docker-addon'
               'CUSTOM': 'custom-value'
 
       describe 'with a base env', ->
-        CONFIG =
-          env:
-            'HOSTNAME': 'docker'
-            'TEST_ONLY_VALUE':
-              'test': 'true'
-            'RAILS_ENV':
-              'dev': 'development'
-              'test': 'test'
-          addons:
-            'my-addon':
+        ADDONS =
+          'my-addon':
+            'service':
               env:
                 'HOSTNAME': 'docker-addon'
                 'CUSTOM':
                   'dev.namespace': 'custom-value'
 
-        it 'paramerizes the env variables', ->
-          expect(ServiceHelpers.collapseServiceConfigEnv(CONFIG, 'dev.namespace', ['my-addon'])).toEqual
+        CONFIG =
+          env:
+            'HOSTNAME': 'docker'
+            'TEST_ONLY_VALUE': null
+            'RAILS_ENV': 'development'
+
+        it 'parametrizes the env variables', ->
+          expect(ServiceHelpers.combineAddons('service', 'dev.namespace', CONFIG, ['my-addon'], ADDONS)).toEqual
             env:
               'HOSTNAME': 'docker-addon'
               'TEST_ONLY_VALUE': null
@@ -252,25 +244,24 @@ describe 'collapseServiceConfigEnv', ->
               'CUSTOM': 'custom-value'
 
       describe 'with multiple addons', ->
-        CONFIG =
-          env:
-            'HOSTNAME': 'docker'
-            'TEST_ONLY_VALUE':
-              'test': 'true'
-            'RAILS_ENV':
-              'dev': 'development'
-              'test': 'test'
-          addons:
-            'my-addon':
+        ADDONS =
+          'my-addon':
+            'service':
               env:
                 'HOSTNAME': 'docker-addon'
-            'my-second-addon':
+          'my-second-addon':
+            'service':
               env:
                 'CUSTOM':
                   'dev.namespace': 'custom-value'
+        CONFIG =
+          env:
+            'HOSTNAME': 'docker'
+            'TEST_ONLY_VALUE': null
+            'RAILS_ENV': 'development'
 
         it 'paramerizes the env variables', ->
-          expect(ServiceHelpers.collapseServiceConfigEnv(CONFIG, 'dev.namespace', ['my-addon', 'my-second-addon'])).toEqual
+          expect(ServiceHelpers.combineAddons('service', 'dev.namespace', CONFIG, ['my-addon', 'my-second-addon'], ADDONS)).toEqual
             env:
               'HOSTNAME': 'docker-addon'
               'TEST_ONLY_VALUE': null

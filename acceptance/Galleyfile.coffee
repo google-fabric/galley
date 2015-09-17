@@ -5,13 +5,15 @@ module.exports =
       module: 'root'
       suffix: 'galley-integration-rsync'
 
+  ADDONS:
+    'backend-addon':
+      'application':
+        links:
+          'galley-integration': ['backend']
+
   'application':
     image: 'galley-integration-application'
     source: '/src'
-    addons:
-      'backend-addon':
-        links:
-          'galley-integration': ['backend']
 
   'backend':
     image: 'galley-integration-backend'
