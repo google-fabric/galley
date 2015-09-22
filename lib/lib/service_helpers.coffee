@@ -170,29 +170,34 @@ collapseEnvironment = (configValue, env, defaultValue) ->
   else
     if configValue? then configValue else defaultValue
 
+envsFromServiceConfig = (serviceConfig) ->
+  definedEnvs = for parametrizeableKey, value of _.pick(serviceConfig, ['links', 'ports', 'volumesFrom'])
+    if not value or _.isArray(value)
+      []
+    else
+      _.keys(value)
+
+  envEnvs = for variable, value of serviceConfig['env']
+    if _.isArray(value) or _.isString(value)
+      []
+    else
+      _.keys(value)
+
+  definedEnvs = definedEnvs.concat(envEnvs)
+  _.unique _.flatten definedEnvs
+
 listServicesWithEnvs = (galleyfileValue) ->
-  globalConfig = galleyfileValue.CONFIG or {}
-
   serviceList = _.mapValues galleyfileValue, (serviceConfig, service) ->
-    return if service is 'CONFIG'
-
-    definedEnvs = for parametrizeableKey, value of _.pick(serviceConfig, ['links', 'ports', 'volumesFrom'])
-      if not value or _.isArray(value)
-        []
-      else
-        _.keys(value)
-
-    envEnvs = for variable, value of serviceConfig['env']
-      if _.isArray(value) or _.isString(value)
-        []
-      else
-        _.keys(value)
-
-    definedEnvs = definedEnvs.concat(envEnvs)
-    _.unique _.flatten definedEnvs
+    return if service is 'CONFIG' or service is 'ADDONS'
+    envsFromServiceConfig serviceConfig
 
   delete serviceList.CONFIG
+  delete serviceList.ADDONS
   serviceList
+
+listAddons = (galleyfileValue) ->
+  addons = galleyfileValue['ADDONS'] or {}
+  _.keys(addons)
 
 # Generates an array of prerequisite services of a service, from the configuration file.
 # The last element of returned array is the requested service,
@@ -239,5 +244,6 @@ module.exports = {
   collapseServiceConfigEnv
   processConfig
   listServicesWithEnvs
+  listAddons
 }
 

@@ -6,7 +6,7 @@ help = require './help'
 
 ServiceHelpers = require '../lib/service_helpers'
 
-listServices = (services) ->
+displayServicesAndEnvs = (services) ->
   alphabetizedKeys = _.keys(services)
   alphabetizedKeys.sort()
 
@@ -15,12 +15,21 @@ listServices = (services) ->
     if services[key].length > 0
       process.stdout.write " (#{ services[key].join(', ') })"
     process.stdout.write '\n'
+
+listServices = (services, addons) ->
+  process.stdout.write 'Available Addons:\n'
+  displayServicesAndEnvs(addons)
+
+  process.stdout.write 'Available Services:\n'
+  displayServicesAndEnvs(services)
+
   RSVP.resolve()
 
 module.exports = (args, commandOptions, done) ->
   services = ServiceHelpers.listServicesWithEnvs commandOptions.config
+  addons = ServiceHelpers.listAddons commandOptions.config
 
-  listServices services
+  listServices services, addons
     .then -> done?()
     .catch (e) ->
       console.error e?.stack or 'Aborting. '
