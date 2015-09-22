@@ -4,7 +4,6 @@ minimist = require 'minimist'
 
 ConsoleReporter = require '../lib/console_reporter'
 Docker = require 'dockerode'
-DockerConfig = require '../lib/docker_config'
 DockerUtils = require '../lib/docker_utils'
 PromiseUtils = require '../lib/promise_utils'
 ServiceHelpers = require '../lib/service_helpers'
@@ -84,7 +83,7 @@ module.exports = (args, commandOptions, done) ->
   if argv._.length isnt 0 or argv.help
     return help args, commandOptions, done
 
-  docker = new Docker(DockerConfig.connectionConfig())
+  docker = new Docker()
 
   options =
     unprotectStateful: argv.unprotectStateful

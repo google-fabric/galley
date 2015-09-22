@@ -904,7 +904,7 @@ module.exports = (args, commandOptions, done) ->
   unless service? and not _.isEmpty(service)
     return help args, commandOptions, done
 
-  dockerConfig = DockerConfig.connectionConfig()
+  docker = new Docker()
 
   options.stdin = commandOptions.stdin or process.stdin
   options.stderr = commandOptions.stderr or process.stderr
@@ -913,7 +913,7 @@ module.exports = (args, commandOptions, done) ->
   options.reporter = commandOptions.reporter or new ConsoleReporter(options.stderr)
   options.stdinCommandInterceptor = new StdinCommandInterceptor(options.stdin)
 
-  options.localhostForwarder = new LocalhostForwarder(dockerConfig, options.reporter)
+  options.localhostForwarder = new LocalhostForwarder(docker.modem, options.reporter)
 
   throw "Missing env for service #{service}. Format: <service>.<env>" unless env
 
@@ -925,8 +925,6 @@ module.exports = (args, commandOptions, done) ->
   # We want to generate this before prepareServiceSource so that its potential modifications
   # to "volumesFrom" don't appear as additional prereq services.
   services = ServiceHelpers.generatePrereqServices(service, servicesConfig)
-
-  docker = new Docker(dockerConfig)
 
   sighupHandler = options.stdinCommandInterceptor.sighup.bind(options.stdinCommandInterceptor)
   process.on 'SIGHUP', sighupHandler

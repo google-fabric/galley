@@ -5,24 +5,6 @@ _ = require 'lodash'
 homeDir = require 'home-dir'
 
 module.exports =
-  connectionConfig: ->
-    hostUrl = url.parse process.env.DOCKER_HOST or ''
-
-    dockerOpts = if hostUrl.hostname
-      host: hostUrl.hostname
-      port: hostUrl.port
-    else
-      socketPath: process.env.DOCKER_HOST or '/var/run/docker.sock'
-
-    if (certPath = process.env.DOCKER_CERT_PATH)
-      _.merge dockerOpts,
-        protocol: 'https'
-        ca: fs.readFileSync "#{certPath}/ca.pem"
-        cert: fs.readFileSync "#{certPath}/cert.pem"
-        key: fs.readFileSync "#{certPath}/key.pem"
-
-    dockerOpts
-
   # Checks the user's docker config file for login information. The file is a JSON hash, and there are two
   # versions, in two different locations.
   #

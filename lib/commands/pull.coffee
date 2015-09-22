@@ -70,7 +70,7 @@ module.exports = (args, commandOptions, done) ->
     return help args, commandOptions, done
 
   {servicesConfig} = ServiceHelpers.processConfig commandOptions.config, env, options.add
-  docker = new Docker(DockerConfig.connectionConfig())
+  docker = new Docker()
 
   pullService docker, servicesConfig, service, env
     .then -> done?()
