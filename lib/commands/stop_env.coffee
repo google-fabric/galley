@@ -1,7 +1,6 @@
 _ = require 'lodash'
 ConsoleReporter = require '../lib/console_reporter'
 Docker = require 'dockerode'
-DockerConfig = require '../lib/docker_config'
 RSVP = require 'rsvp'
 help = require './help'
 
@@ -18,7 +17,7 @@ stopContainer = (name, container, reporter) ->
       resolve()
 
 module.exports = (args, options, done) ->
-  docker = new Docker(DockerConfig.connectionConfig())
+  docker = new Docker()
 
   if args.length isnt 1
     return help args, options, done
