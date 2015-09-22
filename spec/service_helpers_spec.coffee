@@ -318,7 +318,7 @@ describe 'listServicesWithEnvs', ->
         'application': []
         'service': ['dev', 'dev.namespace', 'test', 'other']
 
-describe 'listAddonsWithEnv', ->
+describe 'listAddons', ->
   describe 'envs', ->
     CONFIG =
       ADDONS:
@@ -328,8 +328,7 @@ describe 'listAddonsWithEnv', ->
               'dev': ['database']
 
     it 'processes addons', ->
-      expect(ServiceHelpers.listAddons(CONFIG)).toEqual
-        'myaddon': ['dev']
+      expect(ServiceHelpers.listAddons(CONFIG)).toEqual ['myaddon']
 
 describe 'processConfig', ->
   describe 'naming', ->
