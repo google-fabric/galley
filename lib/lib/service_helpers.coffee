@@ -146,6 +146,11 @@ processConfig = (galleyfileValue, env, requestedAddons) ->
   globalConfig = galleyfileValue.CONFIG or {}
   globalAddons = galleyfileValue.ADDONS or {}
 
+  unless globalConfig.rsync?
+    globalConfig.rsync =
+      image: 'galley/rsync'
+      module: 'root'
+
   servicesConfig = _.mapValues galleyfileValue, (serviceConfig, service) ->
     return if service is 'CONFIG'
 

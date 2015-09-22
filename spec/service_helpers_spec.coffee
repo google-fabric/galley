@@ -375,3 +375,7 @@ describe 'processConfig', ->
     it 'returns global config', ->
       expect(ServiceHelpers.processConfig(CONFIG, 'dev', []).globalConfig).toEqual
         registry: 'docker.example.tv'
+        # rsync config is default
+        rsync:
+          image: 'galley/rsync'
+          module: 'root'
