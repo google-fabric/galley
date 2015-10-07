@@ -8,14 +8,14 @@ DockerArgs = require '../lib/lib/docker_args'
 describe 'DockerArgs', ->
   describe 'formatEnvVariables', ->
     it 'should be a list for Docker', ->
-      envVars = 
+      envVars =
         'VAR1': 'value1'
         'VAR2': 'value2'
 
       expect(DockerArgs.formatEnvVariables(envVars)).toEqual ['VAR1=value1', 'VAR2=value2']
 
     it 'excludes nulls but includes empty strings', ->
-      envVars = 
+      envVars =
         'VAR1': ''
         'VAR2': null
 
@@ -35,7 +35,7 @@ describe 'DockerArgs', ->
 
   describe 'formatPortBindings', ->
     it 'should return portBindings and exposedPorts', ->
-      ports = ['3000:3200', '8506']
+      ports = ['3200:3000', '8506']
       expect(DockerArgs.formatPortBindings(ports)).toEqual
         portBindings: {'3000/tcp': [{'HostPort': '3200'}]}
         exposedPorts: {'8506/tcp': {}}

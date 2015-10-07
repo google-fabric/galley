@@ -30,10 +30,11 @@ formatPortBindings = (ports) ->
 
   for port in ports
     [dst, src] = port.split(':')
-    if dst
+    if src
       portBindings["#{src}/tcp"] = [{'HostPort': dst}]
     else
-      exposedPorts["#{src}/tcp"] = {}
+      # if no second port is specified, the first port is the container port to expose
+      exposedPorts["#{dst}/tcp"] = {}
 
   {portBindings, exposedPorts}
 
