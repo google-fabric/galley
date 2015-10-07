@@ -19,7 +19,7 @@ formatLinks = (links, containerNameMap) ->
     containerName = containerNameMap[service]
     "#{containerName}:#{alias}"
 
-# Given a list of ports of the form "<container>:<host>" or just "<container>", returns a hash of
+# Given a list of ports of the form "<host>:<container>" or just "<container>", returns a hash of
 # portBindings and exposedPorts. portBindings maps to specific ports on the host, whereas
 # exposedPorts will cause Docker to map to random ports on the host.
 #
@@ -29,7 +29,7 @@ formatPortBindings = (ports) ->
   exposedPorts = {}
 
   for port in ports
-    [src, dst] = port.split(':')
+    [dst, src] = port.split(':')
     if dst
       portBindings["#{src}/tcp"] = [{'HostPort': dst}]
     else
