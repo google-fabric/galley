@@ -1,3 +1,12 @@
+# You can test this Galleyfile locally w/ galley commands! There's a bit of a trick to getting
+# galley to resolve correctly.
+#
+# In the directory above this, run:
+#  $ npm link; npm link galley
+#
+# This will make it so that galley-cli run in this directory will recur up to find galley's own
+# package.json, and from there be able to resolve 'galley'.
+
 module.exports =
   CONFIG:
     rsync:

@@ -154,6 +154,16 @@ isLinkMissing = (containerInfo, createOpts) ->
 
   not _.isEqual(currentLinks, requestedLinks)
 
+# Docker API 1.20 switched from a "Volumes" map of container paths to filesystem paths to a "Mounts"
+# array of mount information. This function adapts to give the "Volumes" format in all cases.
+extractVolumesMap = (containerInfo) ->
+  if containerInfo.Mounts?
+    _.tap {}, (volumesMap) ->
+      for mount in containerInfo.Mounts
+        volumesMap[mount.Destination] = mount.Source
+  else
+    containerInfo.Volumes or {}
+
 # Compares the paths we expect volumes to have, based on the completedServicesMap, with the paths
 # for those volumes from the containerInfo. If there is a discrepency, the container will need to
 # be recreated in order to get the latest volumes.
@@ -171,8 +181,9 @@ areVolumesOutOfDate = (containerInfo, serviceConfig, completedServicesMap) ->
   # We only validate the paths from expectedVolumes, rather than doing a full deep equality check,
   # since the container's *own* VOLUMEs will appear in its Volumes map, along with the ones from
   # VolumesFrom (which are the only ones we validate).
+  containerVolumes = extractVolumesMap containerInfo
   for mountPoint, volumePath of expectedVolumes
-    return true if containerInfo.Volumes[mountPoint] isnt volumePath
+    return true if containerVolumes[mountPoint] isnt volumePath
 
   return false
 
@@ -403,8 +414,10 @@ updateCompletedServicesMap = (service, serviceConfig, containerInfo, completedSe
   completedServicesMap[service].containerName = containerInfo.Name
 
   exportedMounts = _.keys (containerInfo.Config.Volumes or {})
-  exportedPaths = _.pick (containerInfo.Volumes or {}), exportedMounts
+  exportedPaths = _.pick extractVolumesMap(containerInfo), exportedMounts
 
+  # This will be a hash of "destination" paths (those inside the container) to
+  # "source" paths in Docker's volume filesystems.
   completedServicesMap[service].volumePaths = exportedPaths
 
 # Starts a given service, including downloading, creating, removing, and restarting and whatever
