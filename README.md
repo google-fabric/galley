@@ -1,17 +1,22 @@
+![Galley](docs/images/galley-red.png)
+
 ## Overview
 
 Galley is a command-line tool for orchestrating [Docker](https://www.docker.com/) containers in local development
-and test environments. Galley automatically starts a container’s dependencies and connects them with Docker’s
+and test environments. Galley automatically starts a container’s dependencies and connects them using Docker’s
 Links and VolumesFrom mappings. Use Galley to start up a web server that connects to a database. Then, use it to
-start up a web server, its database, an intermediate data service and its database, some queues, worker processes, and
+start up a web server, its database, an intermediate data service (and its database), some queues, worker processes, and
 the monitoring server they all connect to.
+
+**Latest version:** 1.0.0 release!
 
 ### What makes Galley different?
 
-Galley was built to support Fabric’s internal process: multiple teams sharing a dozen or more services across a
+Galley was built to support [Fabric](http://fabric.io)’s internal development process: multiple teams
+sharing a dozen or more services across a
 variety of source code repositories. What is under active development by one team might just be a dependency to
 another, so Galley gives engineers the flexibility to start the service or services they’re working with using
-local source changes, while using the Docker repository’s pre-built images for any dependencies.
+local source code, while getting pre-built images for any dependencies.
 
 Galley keeps service dependencies in a central “Galleyfile” configuration so that you can always start up any
 service in your system, along with any necessary transitive dependencies.
@@ -29,13 +34,21 @@ service in your system, along with any necessary transitive dependencies.
 Galley also has special support for running under a VM, such as when using [docker-machine](https://docs.docker.com/machine/)
 on Mac OS X:
 
- - Built-in `rsync` support for massively-improved disk performance when mapping in source code
+ - Built-in `rsync` support for massively-improved disk performance for local source code
  - Port forwarding to let other machines or mobile devices connect to containers in the VM
 
 And, for continuous integration machines:
 
  - A `--repairSourceOwnership` flag keeps the container from generating files that only root can delete
  - Cleanup command to free up disk space from unused images
+
+### Bug Reports and Discussion
+
+If you find something wrong with Galley, please let us know on the
+[issues](https://github.com/twitter-fabric/galley/issues) page.
+
+You can also chat with us or ask for help on the
+(galley-discuss@googlegroups.com)[https://groups.google.com/forum/#!forum/galley-discuss] mailing list.
 
 ## Galley concepts
 
@@ -47,87 +60,113 @@ When you use `galley run <service>.<env>`, you provide a **primary service** tha
 specify different dependencies between “dev” and “test” modes.
 
 Environments can also have a namespace, such as `.dev.1` or `test.cucumber`. If a service does not have a
-configuration for a namespaced environment, one for the base environment is used instead.
+configuration for a namespaced environment, the one for the base environment is used instead.
 
 Services can be unparametrized on environment. For these services, the service will use the same links/ports/environment values for any environment.
 
-## Getting started
+## Quick start
+```console
+$ npm install -g galley-cli
+$ git clone https://github.com/twitter-fabric/galley-template.git
+$ cd galley-template
+$ galley run demo
+```
+
+## Setting up Galley
 
 ### Installation
 
-`npm install -g galley-cli`
+Galley is distributed as a command-line tool, `galley`, and a library. Install the command-line
+tool globally from the [galley-cli NPM package](https://www.npmjs.com/package/galley-cli):
+
+```console
+$ npm install -g galley-cli
+``` 
+
+### Create a Galleyfile package
+
+Galley keeps your system’s configuration in a central Galleyfile. This file must in a directory with
+an NPM package.json file that depends on the [galley NPM package](https://www.npmjs.com/package/galley).
+You will typically symlink the Galleyfile into the local directory where you keep your repositories.
+
+When you run the `galley` tool, it recursively walks up your directories until it finds a Galleyfile
+or a symlink to one. It then uses the galley library depended on by that package to execute your
+commands.
+
+The easiest way to get started with a Galleyfile is to clone our template:
+
+```console
+$ git clone https://github.com/twitter-fabric/galley-template.git
+```
+
+You can also create an NPM package from scratch:
+
+```console
+$ npm init
+$ npm install --save galley
+$ npm shrinkwrap
+```
 
 ### Writing a Galleyfile
 
-After you’ve installed Galley, you’ll need to write a Galleyfile. A Galleyfile is a JavaScript
-module that exports a configuration hash that defines your services and their dependencies.
+A Galleyfile is a JavaScript module that exports a configuration hash that defines your services and
+their dependencies.
 
 Several services are expected to share a common Galleyfile that defines the dependencies among
 them. You should put your Galleyfile in a common place, and then symlink to it from a common
 ancestor directory for your services. The `galley` CLI tool will search for a Galleyfile recursively
-from the directory it's run in.
-
-To get started, look at the [galley-template](https://github.com/twitter-fabric/galley-template) and the
-example below.
-
-
-```coffeescript
-# Example Galleyfile.coffee for a small Rails app.
-module.exports =
-
-  CONFIG:
-    registry: 'docker.example.biz'
-
-  'config-files': {}
-  'beanstalk': {}
-
-  'www-mysql':
-    image: 'mysql'
-    stateful: true
-
-  'www':
-    env:
-      RAILS_ENV:
-       'dev': 'development'
-       'test': 'test'
-    links:
-      'dev': ['www-mysql:mysql', 'beanstalk']
-      'test': ['www-mysql']
-    ports:
-      'dev': ['3000:3000']
-    source: '/code/www'
-    volumesFrom: ['config-files']
-```
+from the directory it’s run in.
 
 ```javascript
-// CoffeeScript-bootstrapping Galleyfile.js
-require('coffee-script/register');
-module.exports = require('./Galleyfile.coffee');
+// Example Galleyfile.js for a small Rails app.
+module.exports = {
+  CONFIG: {
+    registry: 'docker.example.biz'
+  },
+
+  'config-files': {},
+  'beanstalk': {},
+
+  'www-mysql': {
+    image: 'mysql',
+    stateful: true
+  },
+
+  'www': {
+    env: {
+      RAILS_ENV: {
+       'dev': 'development',
+       'test': 'test'
+      }
+    },
+    links: {
+      'dev': ['www-mysql:mysql', 'beanstalk'],
+      'test': ['www-mysql']
+    },
+    ports: {
+      'dev': ['3000:3000']
+    },
+    source: '/code/www',
+    volumesFrom: ['config-files']
+  }
+};
 ```
 
 The above file defines a Rails “www” service that depends on a MySQL DB in test and both a MySQL DB and a beanstalk
 queue in development. Additionally, it expects to have a “config-files” volume mounted in. The container’s source
 code is kept in `/code/www`, so you can use `galley run -s .` to map a local directory over it.
 
-Once you have a Galleyfile, create a small NPM package for it that depends on `galley`:
-```
-npm init
-npm install --save galley
-npm shrinkwrap
-```
-
 Then, from a common ancestor directory of your service's source directories:
-```
-ln -s ../../path/to/Gallefile.js .
+```console
+$ ln -s ../../path/to/Galleyfile.js .
 ```
 
 ### Running Galley
 
-Test your new Galley setup with some commands:
-```
-  galley run www.dev                      # runs the container and its default command
-  galley run -s . www.dev                 # maps the current host directory over /code/www
-  galley run -s . www.test rake spec      # runs "rake spec" on a "test" environment container
+Once you’ve written a Galleyfile and symlinked it, try it out:
+
+```bash
+$ galley list
 ```
 
 ## Command reference
@@ -176,6 +215,16 @@ destination.)
 
 Run also takes a number of parameters that are the equivalent to `docker run` parameters. See `galley run --help`
 for a complete list.
+
+### `list`
+
+**Examples:**
+```
+galley list
+```
+
+Prints the name of each service in the Galleyfile, along with the environments it’s configured for and which
+addons affect it.
 
 ### `stop-env`
 
@@ -226,43 +275,45 @@ Additionally, the special `CONFIG` key labels a hash of global configuration val
 
 ### Global config
 
-```coffeescript
-# EXAMPLE
-module.exports =
-  GLOBAL:
-    registry: 'docker.example.biz'
-    rsync:
-      image: 'docker.example.biz/rsync'
+```javascript
+module.exports = {
+  CONFIG: {
+    registry: 'docker.example.biz',
+    rsync: {
+      image: 'docker.example.biz/rsync',
       module: 'root'
+    }
+  }
+  …
+};
 ```
 
 **registry:** The Docker registry to use when services have default image names.
 
-**rsync:** The Docker image name and Rsync module name to use to make a container that runs an Rsync daemon. See
+**rsync:** Custom Docker image name and Rsync module name to use to make a container that runs an Rsync daemon. See
 “rsync support” for more information.
 
 ### Service config
 
-```coffeescript
-# EXAMPLE
-'www':
-  addons:
-    'beta':
-      env:
-        'USE_BETA_SERVICE': '1'
-      links: ['beta', 'uploader']
-  env:
-    'HOST': 'localhost'
-    'PROXY_FAYE':
+```javascript
+'www': {
+  env: {
+    'HOST': 'localhost',
+    'PROXY_FAYE': {
       'test': '1'
-  ports:
+    }
+  },
+  ports: {
     'dev': ['3000:3000']
-  links:
-    'dev': ['mongo', 'beanstalk', 'data-service', 'redis']
-    'test': ['mongo' ]
-    'test.cucumber': ['mongo', 'beanstalk', 'data-service']
-  source: '/code/www'
+  },
+  links: {
+    'dev': ['mongo', 'beanstalk', 'data-service', 'redis'],
+    'test': ['mongo' ],
+    'test.cucumber': ['mongo', 'beanstalk', 'data-service'],
+  },
+  source: '/code/www',
   volumesFrom: ['config-files']
+}
 ```
 
 **addons**: Hash of name to a hash of additional configuration values. Additional configuration can include
@@ -280,19 +331,22 @@ values (`links`, `ports`, `volumesFrom`) are concatenated with the service’s b
 **env**: Hash of environment variable names and their values to set in the container. If the values are themselves
 hashes, they are assumed to be from Galley “env” to value.
 
-```
-'my-app':
-  env:
-    # $HOST will always be "localhost" in the container
-    'HOST': 'localhost'
+```javascript
+'my-app': {
+  env: {
+    // $HOST will always be "localhost" in the container
+    'HOST': 'localhost',
 
-    # "galley run my-app.dev" will set $RAILS_ENV to "development"
-    # "galley run my-app.test" will set $RAILS_ENV to "test"
-    # "galley run my-app.test.cucumber" will also set $RAILS_ENV to "test"
-    # "galley run my-app.other" will not have $RAILS_ENV defined
-    'RAILS_ENV':
-      'dev': 'development'
+    // "galley run my-app.dev" will set $RAILS_ENV to "development"
+    // "galley run my-app.test" will set $RAILS_ENV to "test"
+    // "galley run my-app.test.cucumber" will also set $RAILS_ENV to "test"
+    // "galley run my-app.other" will not have $RAILS_ENV defined
+    'RAILS_ENV': {
+      'dev': 'development',
       'test': 'test'
+    }
+  }
+}
 ```
 
 **image**: Image name to generate the container from. Defaults to the service’s name from the default registry.
@@ -301,20 +355,25 @@ hashes, they are assumed to be from Galley “env” to value.
 `"service_name:alias"` (where “alias” is the hostname this container will see the service as). Alternately, can be
 a hash of environment name to array of links.
 
-```
-'data-service':
+```javascript
+'data-service': {
   links: ['data-service-mysql:mysql']
+},
 
-'my-app':
-  links:
-    'dev': ['my-app-mysql:mysql', 'data-service']
-    'test: ['my-app-mysql:mysql']
+'my-app': {
+  links: {
+    'dev': ['my-app-mysql:mysql', 'data-service'],
+    'test': ['my-app-mysql:mysql']
+  }
+},
 
-'data-service-mysql':
+'data-service-mysql': {
   image: 'docker.example.biz/mysql'
+},
 
-'my-app-mysql':
+'my-app-mysql': {
   image: 'docker.example.biz/mysql'
+},
 ```
 
 **ports**: Array of ports to publish when the service is run as the primary service. Array values are either
@@ -333,6 +392,36 @@ is stale or missing links. Can be overridden for a command by the `--unprotectSt
 
 **volumesFrom**: Array of services whose containers should be volume-mounted into this service’s container.
 Alternately, can be a hash of environment name to array of service names.
+
+### Addons
+
+```javascript
+# EXAMPLE
+module.exports = {
+  …
+  ADDONS: {
+    'beta': {
+      'www': {
+        env: {
+          'USE_BETA_SERVICE': '1'
+        },
+        links: ['beta', 'uploader']
+      },
+      'uploader': {
+        env: {
+          'USE_BETA_SERVICE': '1'
+        }
+      }
+    }
+  }
+  …
+};
+```
+
+Addons are extra configurations that can be applied from the command line. An addon can include
+additional `links`, `ports`, `volumesFrom`, and `env` values that are merged with a service’s
+base configuration. Addons are defined globally because they can affect multiple services.
+
 
 ### .galleycfg reference
 
@@ -364,7 +453,25 @@ An example .galleycfg:
 
 ### rsync support
 
-*Documentation needed*
+Galley includes built-in support for using rsync to copy local source changes into a container. This provides
+a significant speed boost over VirtualBox’s shared folders when working on Mac OS X with `docker-machine`.
+
+To use it, just add `--rsync` to your `galley run` commands when you use `--source`.
+
+You can turn on `--rsync` by default with:
+```console
+$ galley config set rsync true
+```
+
+rsync support requires that an rsync server container run and be volume-mapped in to your service’s
+container. By default, Galley downloads and uses [galley/rsync](https://hub.docker.com/r/galley/rsync/),
+but you can specify your own container in the `CONFIG` section of your Galleyfile.
+
+**Caveat:** Galley’s rsyncing goes one way, from outside the container to inside it. Files changed or created
+inside the container are not copied back out to the local disk. In the cases where you need to have a
+bi-directional mapping, use `--rsync false` to temporarily disable rsync.
+
+Also note that `--rsync` only affects the `--source` mapping, not any `--volume` mappings that you specify.
 
 ### Docker defaults
 
@@ -391,7 +498,7 @@ First run `npm install` to fetch dependencies.
 Galley uses `gulp` for building:
 ```
 $ gulp watch        # watches the Galley directory for changes to compile
-$ gulp compile      # compile galley before running tests (if you're not running gulp watch)
+$ gulp compile      # compile galley before running tests (if you’re not running gulp watch)
 $ gulp test         # runs mocha specs
 $ gulp acceptance   # builds the acceptance images and runs some acceptance tests
 ```
