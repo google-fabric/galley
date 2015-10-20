@@ -8,7 +8,7 @@ the monitoring server they all connect to.
 
 ### What makes Galley different?
 
-Galley was built to support Crashlytics’ internal process: multiple teams sharing a dozen or more services across a
+Galley was built to support Fabric’s internal process: multiple teams sharing a dozen or more services across a
 variety of source code repositories. What is under active development by one team might just be a dependency to
 another, so Galley gives engineers the flexibility to start the service or services they’re working with using
 local source changes, while using the Docker repository’s pre-built images for any dependencies.
@@ -26,7 +26,7 @@ service in your system, along with any necessary transitive dependencies.
  - Prevent “stateful” containers like databases from being wiped through recreates
  - JavaScript-based configuration for higher-order service definitions
 
-Galley also has special support for running under a VM, such as when using [boot2docker](http://boot2docker.io/)
+Galley also has special support for running under a VM, such as when using [docker-machine](https://docs.docker.com/machine/)
 on Mac OS X:
 
  - Built-in `rsync` support for massively-improved disk performance when mapping in source code
@@ -66,6 +66,10 @@ Several services are expected to share a common Galleyfile that defines the depe
 them. You should put your Galleyfile in a common place, and then symlink to it from a common
 ancestor directory for your services. The `galley` CLI tool will search for a Galleyfile recursively
 from the directory it's run in.
+
+To get started, look at the [galley-template](https://github.com/twitter-fabric/galley-template) and the
+example below.
+
 
 ```coffeescript
 # Example Galleyfile.coffee for a small Rails app.
@@ -109,6 +113,7 @@ Once you have a Galleyfile, create a small NPM package for it that depends on `g
 ```
 npm init
 npm install --save galley
+npm shrinkwrap
 ```
 
 Then, from a common ancestor directory of your service's source directories:
@@ -313,7 +318,7 @@ a hash of environment name to array of links.
 ```
 
 **ports**: Array of ports to publish when the service is run as the primary service. Array values are either
-`"container_port:host_port"` or `"container_port"`. If a host port is ommitted, Docker will assign a random host
+`host_port:container_port"` or `"container_port"`. If a host port is ommitted, Docker will assign a random host
 port to proxy in. Alternately, can be a hash of environment name to array of port values.
 
 **restart**: Boolean. If true, applies a Docker `RestartPolicy` of “always” to the container. Default is false.
@@ -331,9 +336,22 @@ Alternately, can be a hash of environment name to array of service names.
 
 ### .galleycfg reference
 
-*Documentation needed*
+Galley can write a .galleycfg JSON configuration file into `~` when you run `galley config`.
+Currently, the only state read from the config file is the default value of the `--rsync` flag.
 
-## Additional Info
+You can write to the .galleycfg file with:
+
+`galley config set key value`
+
+
+An example .galleycfg:
+
+```
+{
+  "rsync": true
+}
+```
+
 
 ### Best practices
 
