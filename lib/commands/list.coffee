@@ -6,32 +6,31 @@ help = require './help'
 
 ServiceHelpers = require '../lib/service_helpers'
 
-displayServicesAndEnvs = (services) ->
-  alphabetizedKeys = _.keys(services)
+listServices = (galleyfilePath, out, serviceEnvMap, serviceAddonMap) ->
+  out.write "#{ chalk.bold 'Galleyfile:' } #{galleyfilePath}\n"
+
+  alphabetizedKeys = _.keys(serviceEnvMap)
   alphabetizedKeys.sort()
 
   for key in alphabetizedKeys
-    process.stdout.write chalk.blue key
-    if services[key].length > 0
-      process.stdout.write " (#{ services[key].join(', ') })"
-    process.stdout.write '\n'
+    out.write '  ' + chalk.blue key
+    envs = (".#{env}" for env in serviceEnvMap[key])
+    if envs.length > 0
+      out.write chalk.gray(" [#{ envs.join(', ') }]")
 
-listServices = (services, addons) ->
-  process.stdout.write 'Available Addons:\n'
-  displayServicesAndEnvs(addons)
-
-  process.stdout.write 'Available Services:\n'
-  displayServicesAndEnvs(services)
+    addons = serviceAddonMap[key] or []
+    if addons.length > 0
+      out.write chalk.green(" -a #{ addons.join(' ')}")
+    out.write '\n'
 
   RSVP.resolve()
 
 module.exports = (args, commandOptions, done) ->
-  services = ServiceHelpers.listServicesWithEnvs commandOptions.config
-  addons = ServiceHelpers.listAddons commandOptions.config
+  serviceEnvMap = ServiceHelpers.envsByService commandOptions.config
+  serviceAddonMap = ServiceHelpers.addonsByService commandOptions.config
 
-  listServices services, addons
+  listServices commandOptions.configPath, (commandOptions.stdout or process.stdout), serviceEnvMap, serviceAddonMap
     .then -> done?()
     .catch (e) ->
       console.error e?.stack or 'Aborting. '
       process.exit -1
-

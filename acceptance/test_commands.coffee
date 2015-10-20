@@ -10,6 +10,7 @@ TestReporter = require '../spec/util/test_reporter'
 
 cleanupCommand = require '../lib/commands/cleanup'
 runCommand = require '../lib/commands/run'
+listCommand = require '../lib/commands/list'
 stopEnvCommand = require '../lib/commands/stop_env'
 
 GALLEYFILE = require './Galleyfile'
@@ -62,6 +63,19 @@ cleanup = ->
       resolve
         reporter: options.reporter
 
+list = ->
+  new RSVP.Promise (resolve, reject) ->
+    outBuffer = new streamBuffers.WritableStreamBuffer(frequency: 0)
+    options =
+      config: GALLEYFILE
+      configPath: './Galleyfile.js'
+      stdout: outBuffer
+
+    listCommand [], options, ->
+      resolve
+        # Strip out chalk ASCII codes before returning
+        out: outBuffer.getContentsAsString().replace(/\x1b\[\d+m/g, '')
+
 stopEnv = (env) ->
   new RSVP.Promise (resolve, reject) ->
     stopEnvCommand [env], {reporter: new TestReporter}, resolve
@@ -70,5 +84,6 @@ module.exports = {
   exec
   run
   cleanup
+  list
   stopEnv
 }

@@ -88,6 +88,19 @@ describe 'galley', ->
         .then ->
           testCommands.stopEnv ENV
 
+  describe 'list', ->
+    it 'prints addons and services with environments', ->
+      testCommands.list()
+      .then ({out}) ->
+        expect(out).toEqual '''
+Galleyfile: ./Galleyfile.js
+  application -a backend-addon
+  backend [.galley-integration]
+  config
+  database
+
+'''
+
   describe 'basics', ->
     # Base test to show that we're starting everything up correctly.
     it 'starts up prereq services', ->

@@ -66,6 +66,7 @@ run = (galleyfilePath, argv) ->
 
   opts =
     config: require galleyfilePath
+    configPath: galleyfilePath
     globalOptions: loadGlobalOptionsSync()
 
   args = process.argv.slice 2
