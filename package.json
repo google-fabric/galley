@@ -14,6 +14,11 @@
     "url": "https://github.com/twitter-fabric/galley/issues",
     "email": "galley-discuss@googlegroups.com"
   },
+  "files": [
+    "build/lib",
+    "LICENSE",
+    "README.md"
+  ],
   "devDependencies": {
     "coffee-script": "^1.9.0",
     "del": "^1.1.1",
