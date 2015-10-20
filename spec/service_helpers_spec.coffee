@@ -289,7 +289,7 @@ describe 'addDefaultNames', ->
       image: 'application'
       name: 'application'
 
-describe 'listServicesWithEnvs', ->
+describe 'envsByService', ->
   describe 'envs', ->
     CONFIG =
       service:
@@ -314,11 +314,11 @@ describe 'listServicesWithEnvs', ->
         image: 'application'
 
     it 'processes services', ->
-      expect(ServiceHelpers.listServicesWithEnvs(CONFIG)).toEqual
+      expect(ServiceHelpers.envsByService(CONFIG)).toEqual
         'application': []
         'service': ['dev', 'dev.namespace', 'test', 'other']
 
-describe 'listAddons', ->
+describe 'addonsByService', ->
   describe 'envs', ->
     CONFIG =
       ADDONS:
@@ -326,9 +326,19 @@ describe 'listAddons', ->
           service:
             links:
               'dev': ['database']
+          service2:
+            links:
+              'dev': ['database']
+        myaddon2:
+          service: {}
+          service3: {}
 
     it 'processes addons', ->
-      expect(ServiceHelpers.listAddons(CONFIG)).toEqual ['myaddon']
+      expect(ServiceHelpers.addonsByService(CONFIG)).toEqual {
+        'service': ['myaddon', 'myaddon2']
+        'service2': ['myaddon']
+        'service3': ['myaddon2']
+      }
 
 describe 'processConfig', ->
   describe 'naming', ->

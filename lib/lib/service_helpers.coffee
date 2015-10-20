@@ -191,7 +191,7 @@ envsFromServiceConfig = (serviceConfig) ->
   definedEnvs = definedEnvs.concat(envEnvs)
   _.unique _.flatten definedEnvs
 
-listServicesWithEnvs = (galleyfileValue) ->
+envsByService = (galleyfileValue) ->
   serviceList = _.mapValues galleyfileValue, (serviceConfig, service) ->
     return if service is 'CONFIG' or service is 'ADDONS'
     envsFromServiceConfig serviceConfig
@@ -200,9 +200,14 @@ listServicesWithEnvs = (galleyfileValue) ->
   delete serviceList.ADDONS
   serviceList
 
-listAddons = (galleyfileValue) ->
+addonsByService = (galleyfileValue) ->
   addons = galleyfileValue['ADDONS'] or {}
-  _.keys(addons)
+  _.tap {}, (serviceAddonMap) ->
+    for addon, servicesMap of addons
+      for service, infoMap of servicesMap
+        serviceAddonMap[service] ||= []
+        serviceAddonMap[service].push addon
+        serviceAddonMap[service].sort()
 
 # Generates an array of prerequisite services of a service, from the configuration file.
 # The last element of returned array is the requested service,
@@ -248,7 +253,7 @@ module.exports = {
   combineAddons
   collapseServiceConfigEnv
   processConfig
-  listServicesWithEnvs
-  listAddons
+  envsByService
+  addonsByService
 }
 
