@@ -1,15 +1,19 @@
 {
   "name": "galley",
-  "version": "0.9.4",
-  "description": "",
-  "private": true,
+  "version": "1.0.0",
+  "description": "Galley is a Docker container orchestator for development and testing.",
   "main": "build/lib/index.js",
   "scripts": {
     "prepublish": "gulp build",
     "test": "gulp test acceptance"
   },
-  "author": "",
+  "author": "Twitter, Inc.",
   "license": "MIT",
+  "repository": "twitter-fabric/galley",
+  "bugs": {
+    "url": "https://github.com/twitter-fabric/galley/issues",
+    "email": "galley-discuss@googlegroups.com"
+  },
   "devDependencies": {
     "coffee-script": "^1.9.0",
     "del": "^1.1.1",
@@ -33,11 +37,11 @@
     "chokidar": "^1.0.1",
     "dockerode": "^2.0.4",
     "home-dir": "^1.0.0",
+    "is-running": "^1.0.5",
     "lodash": "^3.0.0",
     "minimist": "^1.1.0",
     "rsvp": "^3.0.16",
     "rsync": "^0.4.0",
-    "is-running": "^1.0.5",
     "tcp-proxy": "0.0.1",
     "term-spinner": "^1.0.0"
   }
