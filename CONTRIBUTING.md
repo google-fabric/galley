@@ -21,11 +21,13 @@ Test your local galley changes
 
 Make sure the tests pass:
 
+    gulp compile # (if you're not running gulp watch)
     gulp test
     gulp acceptance
 
 Make your change. Add tests for your change. Make the tests pass:
 
+    gulp compile # (if you're not running gulp watch)
     gulp test
     gulp acceptance
 

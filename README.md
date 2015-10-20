@@ -386,9 +386,12 @@ If these aren’t working out for you, let us know; we always want to learn abou
 We welcome GitHub issues and pull requests. Please match the existing CoffeeScript style, conventions, and test
 coverage.
 
+First run `npm install` to fetch dependencies.
+
 Galley uses `gulp` for building:
 ```
-$ gulp              # watches the Galley directory for changes to compile
+$ gulp watch        # watches the Galley directory for changes to compile
+$ gulp compile      # compile galley before running tests (if you're not running gulp watch)
 $ gulp test         # runs mocha specs
 $ gulp acceptance   # builds the acceptance images and runs some acceptance tests
 ```
