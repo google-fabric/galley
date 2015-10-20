@@ -28,7 +28,7 @@ service in your system, along with any necessary transitive dependencies.
  - Custom environments to easily run isolated development and test containers side-by-side
  - “Addons” to define optional configuration for services
  - Automatically re-use running containers to support developing on multiple services simultaneously
- - Prevent “stateful” containers like databases from being wiped through recreates
+ - Prevent “stateful” containers, like databases, from being wiped through recreates
  - JavaScript-based configuration for higher-order service definitions
 
 Galley also has special support for running under a VM, such as when using [docker-machine](https://docs.docker.com/machine/)
@@ -62,7 +62,7 @@ specify different dependencies between “dev” and “test” modes.
 Environments can also have a namespace, such as `.dev.1` or `test.cucumber`. If a service does not have a
 configuration for a namespaced environment, the one for the base environment is used instead.
 
-Services can be unparametrized on environment. For these services, the service will use the same links/ports/environment values for any environment.
+Services can be unparameterized on environment. For these services, the service will use the same links/ports/environment values for any environment.
 
 ## Quick start
 ```console
@@ -81,11 +81,11 @@ tool globally from the [galley-cli NPM package](https://www.npmjs.com/package/ga
 
 ```console
 $ npm install -g galley-cli
-``` 
+```
 
 ### Create a Galleyfile package
 
-Galley keeps your system’s configuration in a central Galleyfile. This file must in a directory with
+Galley keeps your system’s configuration in a central Galleyfile. This file must be in a directory with
 an NPM package.json file that depends on the [galley NPM package](https://www.npmjs.com/package/galley).
 You will typically symlink the Galleyfile into the local directory where you keep your repositories.
 
@@ -210,7 +210,7 @@ You can use the `-a` option to enable any “addons” configured for your servi
 bring in additional dependencies or modify environment variables.
 
 If you’ve configured a “source” directory for the primary service, you can use the `-s` option to map a local
-directory to it. (This is more convienient than `-v` for the common case of regularly mapping to the same
+directory to it. (This is more convenient than `-v` for the common case of regularly mapping to the same
 destination.)
 
 Run also takes a number of parameters that are the equivalent to `docker run` parameters. See `galley run --help`
@@ -251,7 +251,7 @@ galley pull -a beta www.dev
 Pulls the latest image for the given primary service and any transitive dependencies that come from its
 environment. Can take `-a` to include addons in the dependency tree.
 
-Pull just updates the local Docker images, it doesn’t cause any changes to running containers. But, a follow-up
+`galley pull` just updates the local Docker images, it doesn’t cause any changes to running containers. But, a follow-up
 `galley run` will recreate any non-“stateful” containers for dependencies whose images have changed.
 
 ### `cleanup`
@@ -308,7 +308,7 @@ module.exports = {
   },
   links: {
     'dev': ['mongo', 'beanstalk', 'data-service', 'redis'],
-    'test': ['mongo' ],
+    'test': ['mongo'],
     'test.cucumber': ['mongo', 'beanstalk', 'data-service'],
   },
   source: '/code/www',
@@ -352,8 +352,8 @@ hashes, they are assumed to be from Galley “env” to value.
 **image**: Image name to generate the container from. Defaults to the service’s name from the default registry.
 
 **links**: Array of links to make to other containers. Elements are either `"service_name"` or
-`"service_name:alias"` (where “alias” is the hostname this container will see the service as). Alternately, can be
-a hash of environment name to array of links.
+`"service_name:alias"` (where “alias” is the hostname this container will see the service as). Alternately, the value
+can be a hash of environment name to array of links.
 
 ```javascript
 'data-service': {
@@ -380,13 +380,13 @@ a hash of environment name to array of links.
 `host_port:container_port"` or `"container_port"`. If a host port is ommitted, Docker will assign a random host
 port to proxy in. Alternately, can be a hash of environment name to array of port values.
 
-**restart**: Boolean. If true, applies a Docker `RestartPolicy` of “always” to the container. Default is false.
+**restart**: Boolean. If `true`, applies a Docker `RestartPolicy` of “always” to the container. Default is `false`.
 
 **source**: String path to a source code directory inside the container. If `-s` is provided to `galley run`, Galley
 will bind that directory to the source directory in the container.
 
-**stateful**: Boolean. If true, Galley will not remove the container in `galley run` or `galley cleanup`, even if it
-is stale or missing links. Can be overridden for a command by the `--unprotectStateful` flag. Default is false.
+**stateful**: Boolean. If `true`, Galley will not remove the container in `galley run` or `galley cleanup`, even if it
+is stale or missing links. Can be overridden for a command by the `--unprotectStateful` flag. Default is `false`.
 
 **user**: User to run the container as.
 
@@ -463,7 +463,7 @@ You can turn on `--rsync` by default with:
 $ galley config set rsync true
 ```
 
-rsync support requires that an rsync server container run and be volume-mapped in to your service’s
+rsync support requires that an rsync server container be run and volume-mapped in to your service’s
 container. By default, Galley downloads and uses [galley/rsync](https://hub.docker.com/r/galley/rsync/),
 but you can specify your own container in the `CONFIG` section of your Galleyfile.
 
