@@ -72,7 +72,7 @@ services' base environment configuration is used.
 $ npm install -g galley-cli
 $ git clone https://github.com/twitter-fabric/galley-template.git
 $ cd galley-template
-$ galley run demo
+$ galley run demo.dev
 ```
 
 ## Setting up Galley
