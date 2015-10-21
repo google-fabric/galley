@@ -1,6 +1,8 @@
 ![Galley](docs/images/galley-red.png)
 
 
+[![Travis](https://img.shields.io/travis/rust-lang/rust.svg)](https://github.com/twitter-fabric/galley)
+
 ## Overview
 
 Galley is a command-line tool for orchestrating [Docker](https://www.docker.com/) containers in development
