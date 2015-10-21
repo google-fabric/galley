@@ -1,10 +1,11 @@
 ![Galley](docs/images/galley-red.png)
 
+
 ## Overview
 
-Galley is a command-line tool for orchestrating [Docker](https://www.docker.com/) containers in local development
+Galley is a command-line tool for orchestrating [Docker](https://www.docker.com/) containers in development
 and test environments. Galley automatically starts a container’s dependencies and connects them using Docker’s
-Links and VolumesFrom mappings. Use Galley to start up a web server that connects to a database. Then, use it to
+`Links` and `VolumesFrom` mappings. Use Galley to start up a web server that connects to a database. Then, use it to
 start up a web server, its database, an intermediate data service (and its database), some queues, worker processes, and
 the monitoring server they all connect to.
 
@@ -24,22 +25,21 @@ service in your system, along with any necessary transitive dependencies.
 ### Features
 
  - Run Docker containers, linking them to their dependencies
- - Runtime control over whether to mount local source code into containers
+ - Dynamic mapping of local source code into containers
  - Custom environments to easily run isolated development and test containers side-by-side
  - “Addons” to define optional configuration for services
- - Automatically re-use running containers to support developing on multiple services simultaneously
- - Prevent “stateful” containers, like databases, from being wiped through recreates
+ - Automatic re-use of running containers to support developing multiple services simultaneously
+ - Protected “stateful” containers (*e.g.* databases)
  - JavaScript-based configuration for higher-order service definitions
 
-Galley also has special support for running under a VM, such as when using [docker-machine](https://docs.docker.com/machine/)
-on Mac OS X:
+Galley also has special support for running under a VM, such as when using [docker-machine](https://docs.docker.com/machine/) on Mac OS X:
 
- - Built-in `rsync` support for massively-improved disk performance for local source code
+ - Built-in `rsync` support for massively-improved disk performance with VirtualBox for local source code.
  - Port forwarding to let other machines or mobile devices connect to containers in the VM
 
 And, for continuous integration machines:
 
- - A `--repairSourceOwnership` flag keeps the container from generating files that only root can delete
+ - A `--repairSourceOwnership` flag keeps containers running as root from generating files that only root can delete
  - Cleanup command to free up disk space from unused images
 
 ### Bug Reports and Discussion
@@ -48,12 +48,12 @@ If you find something wrong with Galley, please let us know on the
 [issues](https://github.com/twitter-fabric/galley/issues) page.
 
 You can also chat with us or ask for help on the
-(galley-discuss@googlegroups.com)[https://groups.google.com/forum/#!forum/galley-discuss] mailing list.
+[galley-discuss@googlegroups.com](https://groups.google.com/forum/#!forum/galley-discuss) mailing list.
 
 ## Galley concepts
 
-Before using Galley, you define a set of **services** in a central **Galleyfile**. These definitions specify what
-Docker options to use to create a container for that service (image, links, volumes, *&tc.*).
+To use Galley you define a set of **services** in a central **Galleyfile**. These definitions specify
+Docker options for each service (image, links, volumes, *etc.*).
 
 When you use `galley run <service>.<env>`, you provide a **primary service** that you want to interact with, and the
 **environment** to run it in. Environments are used in service definitions to vary the configuration, for example to
@@ -62,7 +62,8 @@ specify different dependencies between “dev” and “test” modes.
 Environments can also have a namespace, such as `.dev.1` or `test.cucumber`. If a service does not have a
 configuration for a namespaced environment, the one for the base environment is used instead.
 
-Services can be unparameterized on environment. For these services, the service will use the same links/ports/environment values for any environment.
+Not all services must have environment-specific configurations. For a service with no environment configuration, the
+services' base environment configuration is used.
 
 ## Quick start
 ```console
@@ -112,10 +113,16 @@ $ npm shrinkwrap
 A Galleyfile is a JavaScript module that exports a configuration hash that defines your services and
 their dependencies.
 
-Several services are expected to share a common Galleyfile that defines the dependencies among
-them. You should put your Galleyfile in a common place, and then symlink to it from a common
-ancestor directory for your services. The `galley` CLI tool will search for a Galleyfile recursively
+Services are expected to share a common Galleyfile that defines the dependencies among
+them. You should put your Galleyfile in a common place, and then symlink to it from a
+parent directory for your services. The `galley` CLI tool will search for a Galleyfile recursively
 from the directory it’s run in.
+
+#### Example
+
+The file below defines a Rails “www” service that depends on a MySQL DB in test and both a MySQL DB and a beanstalk
+queue in development. Additionally, it expects to have a “config-files” volume mounted in. The container’s source
+code is kept in `/code/www`, so you can use `galley run -s .` to map a local directory over it.
 
 ```javascript
 // Example Galleyfile.js for a small Rails app.
@@ -152,11 +159,7 @@ module.exports = {
 };
 ```
 
-The above file defines a Rails “www” service that depends on a MySQL DB in test and both a MySQL DB and a beanstalk
-queue in development. Additionally, it expects to have a “config-files” volume mounted in. The container’s source
-code is kept in `/code/www`, so you can use `galley run -s .` to map a local directory over it.
-
-Then, from a common ancestor directory of your service's source directories:
+Then, from a common parent directory of your services' source directories:
 ```console
 $ ln -s ../../path/to/Galleyfile.js .
 ```
@@ -167,6 +170,13 @@ Once you’ve written a Galleyfile and symlinked it, try it out:
 
 ```bash
 $ galley list
+```
+```
+Galleyfile: /path/to/found/Galleyfile.js
+  beanstalk
+  config-files
+  www [.dev, .test]
+  www-mysql
 ```
 
 ## Command reference
@@ -184,12 +194,12 @@ galley run -s . www.test rake spec
 
 Starts up the given service, using the environment both to name containers and to affect the service configuration.
 Dependencies, either `links` or `volumesFrom`, will be started up first and recursively. Containers will be named
-“<service>.<env>”. STDOUT, STDERR, and STDIN are piped from the terminal to the container.
+`<service>.<env>`. STDOUT, STDERR, and STDIN are piped from the terminal to the container.
 
 When Galley exits it will remove the primary service container by default, but leave any dependencies running.
 
 Galley will *always* recreate the container for the named (“primary”) service. For dependencies, Galley will look
-for existing containers that match the “<service>.<env>” naming pattern, starting them if necessary. It will
+for existing containers that match the `<service>.<env>` naming pattern, starting them if necessary. It will
 delete and recreate them if:
 
  - their source image doesn’t match the current image for their image name (*e.g.* if an image was built or pulled
@@ -197,8 +207,8 @@ delete and recreate them if:
  - their current `Links` don’t include everything in the current configuration (typically because a container they
    depend upon has been recreated, but sometimes because an addon changes the configuration)
 
-That being said, if a service is configured to be “stateful” in the Galleyfile, Galley will not recreate it. This is
-useful for database services that would get wiped if that happened, losing useful development state. The
+If a service is configured to be “stateful” in the Galleyfile, Galley will not recreate it.
+This is useful for development database services that would get wiped if that happened, losing hard-won state. The
 `--recreate` and  `--unprotectStateful` command line options affect these behaviors; see `galley run --help` for
 more info.
 
@@ -209,7 +219,7 @@ conflicts with any other instances of that service that are running.
 You can use the `-a` option to enable any “addons” configured for your services (primary or otherwise). Addons can
 bring in additional dependencies or modify environment variables.
 
-If you’ve configured a “source” directory for the primary service, you can use the `-s` option to map a local
+If you’ve configured a “source” directory for the primary service, then you can use the `-s` option to map a local
 directory to it. (This is more convenient than `-v` for the common case of regularly mapping to the same
 destination.)
 
@@ -234,7 +244,7 @@ addons affect it.
 galley stop-env dev
 ```
 
-Stops all containers whose names end in “.<env>”. Useful for freeing up memory in your VM or as a prelude to a
+Stops all containers whose names end in `.<env>`. Useful for freeing up memory in your VM or as a prelude to a
 `galley cleanup` to wipe your slate.
 
 ### `pull`
@@ -251,7 +261,7 @@ galley pull -a beta www.dev
 Pulls the latest image for the given primary service and any transitive dependencies that come from its
 environment. Can take `-a` to include addons in the dependency tree.
 
-`galley pull` just updates the local Docker images, it doesn’t cause any changes to running containers. But, a follow-up
+`galley pull` just updates the local Docker images, it doesn’t cause any changes to running containers. A follow-up
 `galley run` will recreate any non-“stateful” containers for dependencies whose images have changed.
 
 ### `cleanup`
@@ -264,7 +274,7 @@ galley cleanup
 Removes any stopped containers that match Galley’s naming conventions, provided they are not for “stateful”
 services. Removes their volumes as well. See `galley cleanup --help` for options that affect what’s removed.
 
-Also deletes any dangling Docker images on the machine, to free up disk space.
+Deletes any dangling Docker images on the machine, to free up disk space.
 
 ## Galleyfile reference
 
@@ -291,7 +301,7 @@ module.exports = {
 **registry:** The Docker registry to use when services have default image names.
 
 **rsync:** Custom Docker image name and Rsync module name to use to make a container that runs an Rsync daemon. See
-“rsync support” for more information.
+[rsync support](#rsync-support) for more information.
 
 ### Service config
 
@@ -377,7 +387,7 @@ can be a hash of environment name to array of links.
 ```
 
 **ports**: Array of ports to publish when the service is run as the primary service. Array values are either
-`host_port:container_port"` or `"container_port"`. If a host port is ommitted, Docker will assign a random host
+`"host_port:container_port"` or `"container_port"`. If a host port is ommitted, Docker will assign a random host
 port to proxy in. Alternately, can be a hash of environment name to array of port values.
 
 **restart**: Boolean. If `true`, applies a Docker `RestartPolicy` of “always” to the container. Default is `false`.
