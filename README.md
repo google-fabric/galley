@@ -499,6 +499,45 @@ If these aren’t working out for you, let us know; we always want to learn abou
  - Volumes are always removed when removing a container (`docker rm -v`)
  - Containers are started with an `/etc/hosts` entry that points their service name to 127.0.0.1
 
+## Frequently Asked Questions
+
+#### How is Galley different from Docker Compose?
+
+There’s a lot of intersection between Galley and Docker Compose for doing development and testing.
+Galley has been tuned to how we’ve been using containers, which we’ve been happy with but might
+not work for you. You may want to try both and see which is a better fit for your team and your system.
+
+Some things to highlight:
+
+ * The Galleyfile configuration describes your entire system in one place to capture all of your
+   dependencies. One team may be actively developing a service and need to run it with local changes,
+   while another team could just need that service transitively and run it off of an image without
+   ever cloning the source repo.
+
+ * Docker Compose typically starts and stops several containers as a unit and merges their log
+   output. Each Galley process focuses on a single container, starting up its dependencies only if
+   they’re not already running. Galley processes share common containers within an enviroment, which
+   is important for testing co-ordinated changes.
+
+ * Galley does not do any container building on its own. (We’ve been using CI jobs for that.) Galley
+   also provides no features around running containers in production.
+
+Also take a look at `--rsync`, `--localhost`, and other little features we’ve added based on our
+experience building Fabric with Galley.
+
+(And please correct us if we’re mis-representing Docker Compose. We started building Galley before
+it was released, and think a diversity of approaches is healthy for the ecosystem.)
+
+#### Can I use CoffeeScript to write my Galleyfile?
+
+Yes. That’s actually what we do on Fabric, because it makes the configuration file much more
+readable while still giving us the opportunity to refactor the configuration as code. You’ll need
+to depend on `coffee-script` in your Galleyfile package, and use this for your `Galleyfile.js`:
+
+```javascript
+require('coffee-script/register');  
+module.exports = require('./Galleyfile.coffee');
+```
 
 ## Contributing
 
