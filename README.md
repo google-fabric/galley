@@ -65,7 +65,7 @@ Environments can also have a namespace, such as `.dev.1` or `test.cucumber`. If 
 configuration for a namespaced environment, the one for the base environment is used instead.
 
 Not all services must have environment-specific configurations. For a service with no environment configuration, the
-services' base environment configuration is used.
+service's base environment configuration is used.
 
 ## Quick start
 ```console
