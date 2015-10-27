@@ -17,6 +17,7 @@ rootHelp = ->
   print '  help       Print help'
   print '  cleanup    Clean up docker images & containers to save disk space'
   print '  config     Set up your galley configuration'
+  print '  list       List available services, and their environments and addons'
   print '  pull       Download images for a service and its dependencies'
   print '  run        Execute a command inside of a service’s container'
   print '  stop-env   Stop all containers in an environment'
