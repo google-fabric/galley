@@ -19,10 +19,12 @@ stopContainer = (name, container, reporter) ->
 module.exports = (args, options, done) ->
   docker = new Docker()
 
-  if args.length isnt 1
+  if args.length is 0
     return help args, options, done
 
-  env = args[0]
+  envRegExps = []
+  for env in args
+    envRegExps.push new RegExp("\.#{env}$")
 
   reporter = options.reporter or new ConsoleReporter(process.stderr)
 
@@ -36,13 +38,12 @@ module.exports = (args, options, done) ->
       id = containerInfo.Id
 
       for name in containerInfo.Names
-        if name.match new RegExp("\.#{env}$")
+        for envRegExp in envRegExps when name.match(envRegExp)
           found = true
 
           do (id, name) ->
             promise = promise.then ->
               stopContainer name, docker.getContainer(id), reporter
-          break
 
     if found
       promise.then done
