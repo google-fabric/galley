@@ -89,12 +89,12 @@ makeCreateOpts = (imageInfo, serviceConfig, servicesMap, options) ->
 # Downloads an image by name, showing progress on stderr.
 #
 # Returns a promise that resolves when the download is complete.
-downloadServiceImage = (docker, imageName, options) ->
+downloadServiceImage = (docker, imageName, globalRegistry, options) ->
   options.reporter.startTask 'Downloading'
 
   progressLine = options.reporter.startProgress()
 
-  DockerUtils.downloadImage docker, imageName, DockerConfig.authConfig, progressLine.set.bind(progressLine)
+  DockerUtils.downloadImage docker, imageName, globalRegistry, DockerConfig.authConfig, progressLine.set.bind(progressLine)
   .finally -> progressLine.clear()
   .then -> options.reporter.succeedTask()
 
@@ -103,7 +103,7 @@ downloadServiceImage = (docker, imageName, options) ->
 # Returns a promise that resolves to a hash of the format:
 #  image: the image, guaranteed to be locally downloaded
 #  info: result of Dockerode's inspect
-ensureImageAvailable = (docker, imageName, options) ->
+ensureImageAvailable = (docker, imageName, globalRegistry, options) ->
   image = docker.getImage(imageName)
 
   DockerUtils.inspectImage image
@@ -111,7 +111,7 @@ ensureImageAvailable = (docker, imageName, options) ->
     # A 404 is a legitimate error that an image of that name doesn't exist. So, try to pull it.
     throw err unless err?.statusCode is 404
 
-    downloadServiceImage docker, imageName, options
+    downloadServiceImage docker, imageName, globalRegistry, options
     .then ->
       DockerUtils.inspectImage image
 
@@ -436,7 +436,7 @@ updateCompletedServicesMap = (service, serviceConfig, containerInfo, completedSe
 # If the container was attached, the promise resolves when the container's process completes, or
 # when the stream is explicitly detached by the user. If the container was not attached, the
 # promise resolves once the container has started.
-startService = (docker, serviceConfig, service, options, completedServicesMap) ->
+startService = (docker, serviceConfig, globalConfig, service, options, completedServicesMap) ->
   # We write out our name as a prefix to both status messages and error messages
   options.reporter.startService service
 
@@ -449,7 +449,7 @@ startService = (docker, serviceConfig, service, options, completedServicesMap) -
     freshlyCreated: null
     volumePaths: null
 
-  ensureImageAvailable docker, serviceConfig.image, options
+  ensureImageAvailable docker, serviceConfig.image, globalConfig.registry, options
   .then ({image, info: imageInfo}) ->
     ensureContainerConfigured docker, imageInfo, service, serviceConfig, options, completedServicesMap
 
@@ -663,7 +663,7 @@ prepareServiceSource = (docker, globalConfig, config, service, env, options) ->
   # TODO(phopkins): Make this less awkward.
   options = _.merge {}, options, leaveReporterOpen: true
 
-  startService docker, rsyncServiceConfig, "#{service} (rsync)", options, {}
+  startService docker, rsyncServiceConfig, globalConfig, "#{service} (rsync)", options, {}
   .then ({container}) ->
     DockerUtils.inspectContainer container
   .then ({container, info}) ->
@@ -709,13 +709,13 @@ prepareServiceSource = (docker, globalConfig, config, service, env, options) ->
 #   containerName: name of the started container
 #   freshlyCreated: true if the container was created this Galley run
 #   volumePaths: map of container path -> host path for all volumes this container exports
-startServices = (docker, config, services, options) ->
+startServices = (docker, config, globalConfig, services, options) ->
   completedServicesMap = {}
 
   loopPromise = RSVP.resolve()
   _.forEach services, (service) ->
     loopPromise = loopPromise.then ->
-      startService docker, config[service], service, options, completedServicesMap
+      startService docker, config[service], globalConfig, service, options, completedServicesMap
 
   loopPromise.then -> completedServicesMap
 
@@ -842,16 +842,16 @@ parseArgs = (args) ->
 # Resolves to promise with the hash:
 #   statusCode: the statusCode of the container's process if it ran to completion, 0 if we detached,
 #     or -1 if there was an error.
-go = (docker, servicesConfig, services, options) ->
+go = (docker, servicesConfig, globalConfig, services, options) ->
   # TODO(phopkins): Don't assume that the last service is the primary one once we implement
   # triggers.
   service = services.pop()
 
-  startServices docker, servicesConfig, services, options
+  startServices docker, servicesConfig, globalConfig, services, options
   .then (completedServicesMap) ->
     # Pass through completedServicesMap so we can re-use any auto-generated name for the
     # service container when HUP-reloading below.
-    startService docker, servicesConfig[service], service, options, completedServicesMap
+    startService docker, servicesConfig[service], globalConfig, service, options, completedServicesMap
     .then ({container, resolution}) -> {container, resolution, completedServicesMap}
 
   .then ({container, resolution, completedServicesMap}) ->
@@ -874,7 +874,7 @@ go = (docker, servicesConfig, services, options) ->
         #
         # TODO(phopkins): Clean this up a bit when triggers are in place and the
         # primary service is less special.
-        go docker, servicesConfig, services.concat(service), options
+        go docker, servicesConfig, globalConfig, services.concat(service), options
 
       when 'detach'
         printDetachedMessage(container, options)
@@ -944,7 +944,7 @@ module.exports = (args, commandOptions, done) ->
 
   prepareServiceSource docker, globalConfig, servicesConfig, service, env, options
   .then ({rsyncer}) ->
-    go docker, servicesConfig, services, options
+    go docker, servicesConfig, globalConfig, services, options
     .finally ->
       rsyncer?.stop()
   .then ({statusCode}) ->
