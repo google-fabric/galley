@@ -86,7 +86,7 @@ resizeContainer = (container, ttyStream) ->
 # calls the progressCb function with either undefined or an interesting progress string.
 #
 # Does not resolve to a value.
-downloadImage = (docker, imageName, authConfigFn, progressCb = ->) ->
+downloadImage = (docker, imageName, globalRegistry, authConfigFn, progressCb = ->) ->
   new RSVP.Promise (resolve, reject) ->
     opts = {}
 
@@ -97,6 +97,8 @@ downloadImage = (docker, imageName, authConfigFn, progressCb = ->) ->
       repository = imageName.split('/')[0]
       if repository.indexOf('.') isnt -1
         opts.authconfig = authConfigFn(repository)
+      else
+        opts.authconfig = authConfigFn(globalRegistry)
 
     docker.pull imageName, opts, (err, stream) ->
       return reject(err) if err

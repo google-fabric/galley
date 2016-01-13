@@ -29,12 +29,13 @@ parseArgs = (args) ->
 
   {service, env, options}
 
-pullService = (docker, servicesConfig, service, env) ->
+pullService = (docker, servicesConfig, globalConfig, service, env) ->
   prereqsArray = ServiceHelpers.generatePrereqServices(service, servicesConfig)
 
   prereqPromise = RSVP.resolve()
   _.forEach prereqsArray, (prereq) ->
     imageName = servicesConfig[prereq].image
+    globalRegistry = globalConfig.registry
     progressLine = new ProgressLine process.stderr, chalk.gray
 
     prereqPromise = prereqPromise
@@ -42,7 +43,7 @@ pullService = (docker, servicesConfig, service, env) ->
       process.stderr.write chalk.blue(prereq + ':')
       process.stderr.write chalk.gray(' Pulling… ')
 
-      DockerUtils.downloadImage(docker, imageName, DockerConfig.authConfig, progressLine.set.bind(progressLine))
+      DockerUtils.downloadImage(docker, imageName, globalRegistry, DockerConfig.authConfig, progressLine.set.bind(progressLine))
     .finally ->
       progressLine.clear()
     .then ->
@@ -69,10 +70,10 @@ module.exports = (args, commandOptions, done) ->
   unless service? and not _.isEmpty(service)
     return help args, commandOptions, done
 
-  {servicesConfig} = ServiceHelpers.processConfig commandOptions.config, env, options.add
+  {globalConfig, servicesConfig} = ServiceHelpers.processConfig commandOptions.config, env, options.add
   docker = new Docker()
 
-  pullService docker, servicesConfig, service, env
+  pullService docker, servicesConfig, globalConfig, service, env
     .then -> done?()
     .catch (e) ->
       console.error e?.stack or 'Aborting. '
