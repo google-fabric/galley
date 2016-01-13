@@ -304,6 +304,8 @@ ensureContainerRunning = (container, info, service, serviceConfig, options) ->
     DockerUtils.inspectContainer(container)
   .then ({container, info}) ->
     options.reporter.succeedTask()
+    if serviceConfig.containerName is ''
+      options.reporter.completeTask "#{chalk.gray 'Running as:'} #{chalk.bold info.Name.substring(1)}"
     {container, info}
 
 # If options.attach is true, calls DockerUtils.attachContainer to get a stream. We do this before
@@ -959,4 +961,3 @@ module.exports = (args, commandOptions, done) ->
 
 # Exposed for unit testing
 module.exports.parseArgs = parseArgs
-
