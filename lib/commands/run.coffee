@@ -732,6 +732,7 @@ parseArgs = (args) ->
     # stopEarly allows --opts after the service name to be passed along to the container in command
     stopEarly: true
     boolean: [
+      'as-service'
       'detach'
       'localhost'
       'publish-all'
@@ -797,8 +798,9 @@ parseArgs = (args) ->
   # The first element of argv._ is the service name, so if there's anything past that it means that
   # the user is specifying a command. In that case, we pull in that command, make the container
   # anonymous (so that it doesn't collide with a default version of the service already running),
-  # and also don't publish ports to avoid collision.
-  if argv._.length > 1
+  # and also don't publish ports to avoid collision. The --as-service flag disables the lack of
+  # naming and port binding.
+  if argv._.length > 1 and not argv['as-service']
     _.merge serviceConfigOverrides,
       command: argv._.slice(1)
       containerName: ''
