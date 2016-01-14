@@ -37,8 +37,8 @@ describe 'DockerArgs', ->
     it 'should return portBindings and exposedPorts', ->
       ports = ['3200:3000', '8506']
       expect(DockerArgs.formatPortBindings(ports)).toEqual
-        portBindings: {'3000/tcp': [{'HostPort': '3200'}]}
-        exposedPorts: {'8506/tcp': {}}
+        portBindings: {'3000/tcp': [{'HostPort': '3200'}], '8506/tcp': [{'HostPort': null}]}
+        exposedPorts: {'3000/tcp': {}, '8506/tcp': {}}
 
   describe 'formatVolumes', ->
     it 'should return volumes', ->

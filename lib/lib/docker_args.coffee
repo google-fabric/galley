@@ -20,8 +20,8 @@ formatLinks = (links, containerNameMap) ->
     "#{containerName}:#{alias}"
 
 # Given a list of ports of the form "<host>:<container>" or just "<container>", returns a hash of
-# portBindings and exposedPorts. portBindings maps to specific ports on the host, whereas
-# exposedPorts will cause Docker to map to random ports on the host.
+# portBindings and exposedPorts. We always expose every port specified so we can map ports
+# regardless of EXPOSE commands in the Dockerfile.
 #
 # These go into the HostConfig.Ports and ExposedPorts keys for container creation, respectively.
 formatPortBindings = (ports) ->
@@ -30,11 +30,13 @@ formatPortBindings = (ports) ->
 
   for port in ports
     [dst, src] = port.split(':')
-    if src
-      portBindings["#{src}/tcp"] = [{'HostPort': dst}]
-    else
-      # if no second port is specified, the first port is the container port to expose
-      exposedPorts["#{dst}/tcp"] = {}
+    unless src?
+      src = dst
+      dst = null
+
+    # If dst is null then Docker will allocate an unused port
+    portBindings["#{src}/tcp"] = [{'HostPort': dst}]
+    exposedPorts["#{src}/tcp"] = {}
 
   {portBindings, exposedPorts}
 

@@ -390,7 +390,8 @@ can be a hash of environment name to array of links.
 
 **ports**: Array of ports to publish when the service is run as the primary service. Array values are either
 `"host_port:container_port"` or `"container_port"`. If a host port is ommitted, Docker will assign a random host
-port to proxy in. Alternately, can be a hash of environment name to array of port values.
+port to proxy in. Alternately, can be a hash of environment name to array of port values. Ports need not be
+exposed by the Dockerfile.
 
 **restart**: Boolean. If `true`, applies a Docker `RestartPolicy` of “always” to the container. Default is `false`.
 

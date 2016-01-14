@@ -50,9 +50,7 @@ makeCreateOpts = (imageInfo, serviceConfig, servicesMap, options) ->
   if serviceConfig.publishPorts
     {portBindings, exposedPorts} = DockerArgs.formatPortBindings(serviceConfig.ports)
     createOpts['HostConfig']['PortBindings'] = portBindings
-    unless exposedPorts is {}
-      createOpts['ExposedPorts'] = exposedPorts
-      createOpts['HostConfig']['PublishAllPorts'] = true
+    createOpts['ExposedPorts'] = exposedPorts
 
   # Note container labels and values (as of Docker 1.6) can only be strings
   if serviceConfig.primary?
