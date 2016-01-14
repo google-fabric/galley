@@ -11,7 +11,12 @@ and test environments. Galley automatically starts a container’s dependencies 
 start up a web server, its database, an intermediate data service (and its database), some queues, worker processes, and
 the monitoring server they all connect to.
 
-**Latest version:** 1.0.0 release!
+**Latest version:** 1.0.1
+
+ - Custom commands now report the auto-generated name, and the `--as-service` command can be used to restore
+   the Galleyfile name and port bindings
+ - `stop-env` now can take any number of environments
+ - Fixes bugs around how ports are exposed and uses Docker Hub credentials when necessary
 
 ### What makes Galley different?
 
