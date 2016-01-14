@@ -93,10 +93,14 @@ downloadImage = (docker, imageName, authConfigFn, progressCb = ->) ->
     # Check and see if we're trying to do "repository/image" and, if the repository has a "." in
     # it, grab the credentials. The "." check is the same that the docker command line / tool uses
     # to decide whether the repository is a remote server vs. on its default hub.docker.com registry.
+    #
+    # If there's no ".", we look up auth anyway in the case of private repos on hub.docker.com.
     if imageName.indexOf('/') isnt -1
       repository = imageName.split('/')[0]
-      if repository.indexOf('.') isnt -1
-        opts.authconfig = authConfigFn(repository)
+      opts.authconfig = if repository.indexOf('.') isnt -1
+        authConfigFn(repository)
+      else
+        authConfigFn()
 
     docker.pull imageName, opts, (err, stream) ->
       return reject(err) if err

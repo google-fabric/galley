@@ -4,6 +4,10 @@ url = require 'url'
 _ = require 'lodash'
 homeDir = require 'home-dir'
 
+# Used to look up auth credentials when we know we're going to the official
+# DockerHub registry.
+DEFAULT_DOCKERHUB_HOST = 'https://index.docker.io/v1/'
+
 module.exports =
   # Checks the user's docker config file for login information. The file is a JSON hash, and there are two
   # versions, in two different locations.
@@ -22,10 +26,14 @@ module.exports =
   #     "docker.crash.io": {
   #       "auth": "base64user:pass",
   #       "email": "email@email"
+  #     },
+  #     "https://index.docker.io/v1/": {
+  #       "auth": "base64user:pass",
+  #       "email": "email@email"
   #     }
   #   }
   # }
-  authConfig: (host) ->
+  authConfig: (host = DEFAULT_DOCKERHUB_HOST) ->
     hostConfig = try
       dockerOneSevenConfig = path.resolve homeDir(), '.docker/config.json'
       config = if fs.existsSync(dockerOneSevenConfig)
