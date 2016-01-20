@@ -30,13 +30,14 @@ formatPortBindings = (ports) ->
 
   for port in ports
     [dst, src] = port.split(':')
+    [src, protocol] = if src? && src.indexOf('/') > 0 then src.split('/') else [src, 'tcp']
     unless src?
       src = dst
       dst = null
 
     # If dst is null then Docker will allocate an unused port
-    portBindings["#{src}/tcp"] = [{'HostPort': dst}]
-    exposedPorts["#{src}/tcp"] = {}
+    portBindings["#{src}/#{protocol}"] = [{'HostPort': dst}]
+    exposedPorts["#{src}/#{protocol}"] = {}
 
   {portBindings, exposedPorts}
 
