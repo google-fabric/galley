@@ -35,10 +35,10 @@ describe 'DockerArgs', ->
 
   describe 'formatPortBindings', ->
     it 'should return portBindings and exposedPorts', ->
-      ports = ['3200:3000', '8506', '5555:4444/udp']
+      ports = ['3200:3000', '8506', '5555:4444/udp', '7777/udp']
       expect(DockerArgs.formatPortBindings(ports)).toEqual
-        portBindings: {'3000/tcp': [{'HostPort': '3200'}], '8506/tcp': [{'HostPort': null}], '4444/udp': [{'HostPort': '5555'}]}
-        exposedPorts: {'3000/tcp': {}, '8506/tcp': {}, '4444/udp': {}}
+        portBindings: {'3000/tcp': [{'HostPort': '3200'}], '8506/tcp': [{'HostPort': null}], '4444/udp': [{'HostPort': '5555'}], '7777/udp': [{'HostPort': null}]}
+        exposedPorts: {'3000/tcp': {}, '8506/tcp': {}, '4444/udp': {}, '7777/udp': {}}
 
   describe 'formatVolumes', ->
     it 'should return volumes', ->
