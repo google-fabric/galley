@@ -19,9 +19,10 @@ formatLinks = (links, containerNameMap) ->
     containerName = containerNameMap[service]
     "#{containerName}:#{alias}"
 
-# Given a list of ports of the form "<host>:<container>" or just "<container>", returns a hash of
-# portBindings and exposedPorts. We always expose every port specified so we can map ports
-# regardless of EXPOSE commands in the Dockerfile.
+# Given a list of ports in one of the following forms:
+# "<host>:<container>", "<container>", "<host>:<container>/<protocol>", "<container>/<protocol>",
+# returns a hash of portBindings and exposedPorts. We always expose every port specified so we
+# can map ports regardless of EXPOSE commands in the Dockerfile.
 #
 # These go into the HostConfig.Ports and ExposedPorts keys for container creation, respectively.
 formatPortBindings = (ports) ->
@@ -29,14 +30,13 @@ formatPortBindings = (ports) ->
   exposedPorts = {}
 
   for port in ports
-    [dst, src] = port.split(':')
-    unless src?
-      src = dst
-      dst = null
+    [dst, src, protocol] = port.match(/(?:(\d+)?:)?(\d+)\/?(tcp|udp)?/).slice(1)
+    protocol ||= 'tcp'
+    dst ||= null
 
     # If dst is null then Docker will allocate an unused port
-    portBindings["#{src}/tcp"] = [{'HostPort': dst}]
-    exposedPorts["#{src}/tcp"] = {}
+    portBindings["#{src}/#{protocol}"] = [{'HostPort': dst}]
+    exposedPorts["#{src}/#{protocol}"] = {}
 
   {portBindings, exposedPorts}
 
