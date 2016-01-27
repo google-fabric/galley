@@ -585,7 +585,7 @@ finalizeContainer = (container, options) ->
       options.reporter.error "#{info.Config.Cmd.join ' '} failed with exit code #{statusCode}"
 
     # Since the process exited, we remove the container. (Equivalent of --rm in Docker.)
-    DockerUtils.removeContainer container
+    DockerUtils.removeContainer container, { v: true }
     .then -> {container, statusCode}
 
 # Returns a callback suitable for sending to Rsyncer's "watch" method. Keeps a general status of
