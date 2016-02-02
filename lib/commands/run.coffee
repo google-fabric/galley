@@ -196,8 +196,8 @@ containerNeedsRecreate = (containerInfo, imageInfo, serviceConfig, createOpts, o
   # Normally we make sure to start the "primary" service fresh, deleting it if it exists to get a
   # clean slate, but we don't do so in case of upReload and instead rely on the staleness / restart
   # checks to determine whether it needs a recreation.
-  if serviceConfig.forceRecreate then true
-  else if serviceConfig.stateful and not options.unprotectStateful then false
+  if serviceConfig.stateful and not options.unprotectStateful then false
+  else if serviceConfig.forceRecreate then true
   else if isLinkMissing(containerInfo, createOpts) then true
   else if areVolumesOutOfDate(containerInfo, serviceConfig, servicesMap) then true
   else switch options.recreate
