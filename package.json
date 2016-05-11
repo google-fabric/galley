@@ -39,7 +39,7 @@
   "dependencies": {
     "chalk": "^0.5.1",
     "charm": "git://github.com/crashlytics/node-charm",
-    "chokidar": "^1.0.1",
+    "chokidar": "^1.5.0",
     "dockerode": "^2.0.4",
     "home-dir": "^1.0.0",
     "is-running": "^1.0.5",
