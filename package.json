@@ -31,7 +31,6 @@
     "gulp-notify": "^2.0.1",
     "gulp-plumber": "^1.1.0",
     "gulp-shell": "^0.5.2",
-    "mocha-teamcity-reporter": "^0.0.4",
     "run-sequence": "^1.0.1",
     "semver": "^4.1.0",
     "stream-buffers": "^1.1.0"
