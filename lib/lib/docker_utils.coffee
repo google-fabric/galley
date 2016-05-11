@@ -109,10 +109,17 @@ downloadImage = (docker, imageName, authConfigFn, progressCb = ->) ->
         # Docker sends along a nice summary of the download progress, including an ASCII progress
         # bar and estimation of time remaining for the current download. Send that along to our
         # progress callback.
-        resp = JSON.parse byteBuffer.toString()
-        reject(resp.error) if resp.error?
+        #
+        # At least with Docker 1.11 running in Docker for Mac, the byteBuffer can contain more than
+        # one newline-separated JSON object, so we split, look for errors across all of them, and
+        # report on the first one.
+        #
+        # TODO(finneganh): Do better about multiple simultaneous statuses
+        statusArr = byteBuffer.toString().split('\n').filter((str) -> str.length).map((json) -> JSON.parse(json))
+        statusArr.forEach (status) ->
+          reject(status.error) if status.error?
 
-        progressCb resp.progress or resp.status
+        progressCb statusArr[0].progress or statusArr[0].status
 
       stream.on 'end', -> resolve()
 
