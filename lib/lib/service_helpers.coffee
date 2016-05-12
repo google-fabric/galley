@@ -154,7 +154,7 @@ processConfig = (galleyfileValue, env, requestedAddons) ->
   servicesConfig = _.mapValues galleyfileValue, (serviceConfig, service) ->
     return if service is 'CONFIG'
 
-    # TOOD(phopkins): Raise exception if unrecognized key in serviceConfig
+    # TOOD(finneganh): Raise exception if unrecognized key in serviceConfig
 
     serviceConfig = _.merge {}, DEFAULT_SERVICE_CONFIG, serviceConfig
 

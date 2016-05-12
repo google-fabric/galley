@@ -660,7 +660,7 @@ prepareServiceSource = (docker, globalConfig, config, service, env, options) ->
   # We tell startService to not "finish" the reporter's service so that we can include a
   # "syncing" task on the same line.
   #
-  # TODO(phopkins): Make this less awkward.
+  # TODO(finneganh): Make this less awkward.
   options = _.merge {}, options, leaveReporterOpen: true
 
   startService docker, rsyncServiceConfig, "#{service} (rsync)", options, {}
@@ -845,7 +845,7 @@ parseArgs = (args) ->
 #   statusCode: the statusCode of the container's process if it ran to completion, 0 if we detached,
 #     or -1 if there was an error.
 go = (docker, servicesConfig, services, options) ->
-  # TODO(phopkins): Don't assume that the last service is the primary one once we implement
+  # TODO(finneganh): Don't assume that the last service is the primary one once we implement
   # triggers.
   service = services.pop()
 
@@ -874,7 +874,7 @@ go = (docker, servicesConfig, services, options) ->
 
         # We have to add "service" back on to the list of prereqs.
         #
-        # TODO(phopkins): Clean this up a bit when triggers are in place and the
+        # TODO(finneganh): Clean this up a bit when triggers are in place and the
         # primary service is less special.
         go docker, servicesConfig, services.concat(service), options
 

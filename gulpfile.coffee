@@ -2,7 +2,6 @@ gulp = require 'gulp'
 $ = require('gulp-load-plugins')()
 fs = require 'fs'
 mocha = require 'gulp-mocha'
-mochaTeamcityReporter = require 'mocha-teamcity-reporter'
 shell = require 'gulp-shell'
 runSequence = require 'run-sequence'
 semver = require 'semver'
@@ -66,10 +65,6 @@ gulp.task 'watch', (cb) ->
 
 mochaArgs = ->
   args = {}
-
-  if process.env['USE_MOCHA_TEAMCITY_REPORTER']
-    args.reporter = mochaTeamcityReporter
-
   args
 
 gulp.task 'test', ->

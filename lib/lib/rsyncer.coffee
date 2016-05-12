@@ -62,7 +62,7 @@ class Rsyncer
         pathStatusLines = statusLines[2...-2]
         fileStatusLines = _.filter pathStatusLines, (line) -> line.slice(-1) isnt '/'
 
-        if error then reject(error) 
+        if error then reject(error)
         else resolve(fileStatusLines)
 
       # "data" ends up being some chunk of rsync's output, which is for the most part newline-
@@ -86,7 +86,7 @@ class Rsyncer
   scheduleSync: (progressCb, accumFiles = []) ->
     if @syncing
       @needsResync = true
-      return 
+      return
 
     syncPromise = @sync(progressCb)
     .then (newFiles) =>
@@ -144,7 +144,7 @@ class Rsyncer
     @watchChild.on 'exit', =>
       return unless @watching
 
-      # TODO(phopkins): Maybe detect crash loop?
+      # TODO(finneganh): Maybe detect crash loop?
       @startWatchChild()
       @receivedChange()
 
