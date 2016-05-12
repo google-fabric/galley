@@ -1,3 +1,8 @@
+### v1.0.3 (2016-05-12):
+#### Bug fixes
+ - Updates dependencies for Node 6 compatibility
+ - Fixes crash when pulling containers with Docker 1.11
+
 ### v1.0.2 (2016-01-27):
 #### Features
  - "/udp" can now be used when specifying port mappings
