@@ -1,7 +1,7 @@
 ![Galley](docs/images/galley-red.png)
 
 
-[![Travis](https://img.shields.io/travis/rust-lang/rust.svg)](https://github.com/twitter-fabric/galley)
+[![Build Status](https://travis-ci.org/twitter-fabric/galley.svg?branch=master)](https://travis-ci.org/twitter-fabric/galley)
 
 ## Overview
 
