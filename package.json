@@ -19,6 +19,9 @@
     "LICENSE",
     "README.md"
   ],
+  "engines": {
+    "node": ">= 5.0.0"
+  },
   "devDependencies": {
     "coffee-script": "^1.9.0",
     "del": "^2.2.0",
