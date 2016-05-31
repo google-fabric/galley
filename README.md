@@ -11,10 +11,10 @@ and test environments. Galley automatically starts a container’s dependencies 
 start up a web server, its database, an intermediate data service (and its database), some queues, worker processes, and
 the monitoring server they all connect to.
 
-**Latest version:** 1.0.2
+**Latest version:** 1.0.3
 
- - Support for “/udp” in port mapping
- - Fixes container removal to delete volumes for primary service’s container
+ - Updates dependencies for Node 6 compatibility
+ - Fixes crash when pulling containers with Docker 1.11
 
 ### What makes Galley different?
 
@@ -71,6 +71,9 @@ Not all services must have environment-specific configurations. For a service wi
 service's base environment configuration is used.
 
 ## Quick start
+
+*Note that Galley requires node >= version 5 to run*
+
 ```console
 $ npm install -g galley-cli
 $ git clone https://github.com/twitter-fabric/galley-template.git
@@ -539,7 +542,7 @@ readable while still giving us the opportunity to refactor the configuration as 
 to depend on `coffee-script` in your Galleyfile package, and use this for your `Galleyfile.js`:
 
 ```javascript
-require('coffee-script/register');  
+require('coffee-script/register');
 module.exports = require('./Galleyfile.coffee');
 ```
 
