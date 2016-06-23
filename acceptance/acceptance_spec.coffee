@@ -34,11 +34,11 @@ APPLICATION_SUCCESS =
 # to test the staleness behavior.
 resetTags = ->
   RSVP.all([
-    testCommands.exec 'docker tag -f galley-integration-backend:original galley-integration-backend'
-    testCommands.exec 'docker tag -f galley-integration-database:original galley-integration-database'
-    testCommands.exec 'docker tag -f galley-integration-application:original galley-integration-application'
-    testCommands.exec 'docker tag -f galley-integration-config:original galley-integration-config'
-    testCommands.exec 'docker tag -f galley-integration-rsync:original galley-integration-rsync'
+    testCommands.exec 'docker tag galley-integration-backend:original galley-integration-backend'
+    testCommands.exec 'docker tag galley-integration-database:original galley-integration-database'
+    testCommands.exec 'docker tag galley-integration-application:original galley-integration-application'
+    testCommands.exec 'docker tag galley-integration-config:original galley-integration-config'
+    testCommands.exec 'docker tag galley-integration-rsync:original galley-integration-rsync'
   ])
 
 removeContainers = ->

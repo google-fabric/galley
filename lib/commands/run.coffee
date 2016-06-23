@@ -150,7 +150,19 @@ isLinkMissing = (containerInfo, createOpts) ->
   currentLinks.sort()
   requestedLinks.sort()
 
-  not _.isEqual(currentLinks, requestedLinks)
+  if not _.isEqual(currentLinks, requestedLinks)
+    RSVP.resolve(true)
+  else
+    [service, envParts...] = containerInfo.Name.split("/")[1].split(".")
+    env = envParts.join('.')
+    docker = new Docker()
+    prereqs = createOpts.HostConfig.Links.map (link) -> link.split(':')[1]
+    prereqContainerInfos = prereqs.map (prereq) ->
+      prereqContainerName = "#{prereq}.#{env}"
+      DockerUtils.inspectContainer docker.getContainer(prereqContainerName)
+      .then ({container, info}) -> info.Created > containerInfo.Created
+    RSVP.all _.compact(prereqContainerInfos)
+    .then _.some
 
 # Docker API 1.20 switched from a "Volumes" map of container paths to filesystem paths to a "Mounts"
 # array of mount information. This function adapts to give the "Volumes" format in all cases.
@@ -196,14 +208,15 @@ containerNeedsRecreate = (containerInfo, imageInfo, serviceConfig, createOpts, o
   # Normally we make sure to start the "primary" service fresh, deleting it if it exists to get a
   # clean slate, but we don't do so in case of upReload and instead rely on the staleness / restart
   # checks to determine whether it needs a recreation.
-  if serviceConfig.forceRecreate then true
-  else if serviceConfig.stateful and not options.unprotectStateful then false
-  else if isLinkMissing(containerInfo, createOpts) then true
-  else if areVolumesOutOfDate(containerInfo, serviceConfig, servicesMap) then true
-  else switch options.recreate
-    when 'all' then true
-    when 'stale' then isContainerImageStale(containerInfo, imageInfo)
-    else false
+  isLinkMissing(containerInfo, createOpts).then (linkIsMissing) ->
+    if serviceConfig.forceRecreate then true
+    else if serviceConfig.stateful and not options.unprotectStateful then false
+    else if linkIsMissing then true
+    else if areVolumesOutOfDate(containerInfo, serviceConfig, servicesMap) then true
+    else switch options.recreate
+      when 'all' then true
+      when 'stale' then isContainerImageStale(containerInfo, imageInfo)
+      else false
 
 # Checks the container metadata contained in labels to determine if the container was started by
 # another galley process as the primary container.
@@ -223,27 +236,29 @@ maybeRemoveContainer = (container, containerInfo, imageInfo, serviceConfig, crea
     unless container?
       options.reporter.completeTask 'not found.'
       resolve {container: null}
-    else if containerNeedsRecreate(containerInfo, imageInfo, serviceConfig, createOpts, options, servicesMap)
-      # check to see if the container that needs to be recreated is already managed by
-      # galley (somewhere else). If it is, we can't recreate it, since it will bust that galley
-      # session. Instead, just error out.
-      if containerIsCurrentlyGalleyManaged(containerInfo)
-        reject "Cannot be recreated, container is managed by another Galley process.\n
-          Check that all images are up to date, and that addons requested here match
-          those in the managed Galley container."
-      options.reporter.completeTask('needs recreate').startTask('Removing')
-
-      # When we want to get rid of a container, we want it gone. Use force to take it out if running.
-      # Also, since this is for dev / testing purposes, delete associated volumes as well to keep
-      # them from filling up the disk.
-      promise = DockerUtils.removeContainer container, { force: true, v: true }
-      .then ->
-        options.reporter.succeedTask()
-        {container: null}
-      resolve promise
     else
-      options.reporter.succeedTask 'ok'
-      resolve {container}
+      containerNeedsRecreate(containerInfo, imageInfo, serviceConfig, createOpts, options, servicesMap).then (needsRecreate) ->
+        if needsRecreate
+          # check to see if the container that needs to be recreated is already managed by
+          # galley (somewhere else). If it is, we can't recreate it, since it will bust that galley
+          # session. Instead, just error out.
+          if containerIsCurrentlyGalleyManaged(containerInfo)
+            reject "Cannot be recreated, container is managed by another Galley process.\n
+              Check that all images are up to date, and that addons requested here match
+              those in the managed Galley container."
+          options.reporter.completeTask('needs recreate').startTask('Removing')
+
+          # When we want to get rid of a container, we want it gone. Use force to take it out if running.
+          # Also, since this is for dev / testing purposes, delete associated volumes as well to keep
+          # them from filling up the disk.
+          promise = DockerUtils.removeContainer container, { force: true, v: true }
+          .then ->
+            options.reporter.succeedTask()
+            {container: null}
+          resolve promise
+        else
+          options.reporter.succeedTask 'ok'
+          resolve {container}
 
 # Makes sure that a container exists for the given service. May delete and recreate a container
 # based on the logic of mayRemoveContainer.
@@ -903,7 +918,7 @@ go = (docker, servicesConfig, services, options) ->
 
   .catch (err) ->
     if err? and err isnt '' and typeof err is 'string' or err.json?
-      message = (err?.json or (err if typeof err is 'string') or err?.message or 'Unknown error').trim()
+      message = err.json?.message.trim() or ((err if typeof err is 'string') or err.message or 'Unknown error').trim()
       message = message.replace /^Error: /, ''
       options.reporter.error chalk.bold('Error:') + ' ' + message
 

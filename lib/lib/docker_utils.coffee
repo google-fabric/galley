@@ -31,7 +31,11 @@ inspectContainer = (container) ->
 startContainer = (container, opts = {}) ->
   new RSVP.Promise (resolve, reject) ->
     container.start opts, (err) ->
-      if err then reject(err) else resolve({container})
+      if err
+        err.container = container
+        reject(err)
+      else
+        resolve({container})
 
 stopContainer = (container, opts = {}) ->
   new RSVP.Promise (resolve, reject) ->
