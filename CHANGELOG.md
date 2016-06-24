@@ -1,3 +1,7 @@
+### v1.1.0 (2016-06-24):
+#### Bug fixes
+ - Fix recreation logic for missing links on Docker >= 1.10 (#40)
+
 ### v1.0.3 (2016-05-12):
 #### Bug fixes
  - Updates dependencies for Node 6 compatibility
