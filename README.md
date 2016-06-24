@@ -11,10 +11,9 @@ and test environments. Galley automatically starts a container’s dependencies 
 start up a web server, its database, an intermediate data service (and its database), some queues, worker processes, and
 the monitoring server they all connect to.
 
-**Latest version:** 1.0.3
+**Latest version:** 1.1.0
 
- - Updates dependencies for Node 6 compatibility
- - Fixes crash when pulling containers with Docker 1.11
+ - Fix recreation logic for missing links on Docker >= 1.10
 
 ### What makes Galley different?
 
