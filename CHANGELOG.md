@@ -1,5 +1,10 @@
 ### Next Release
 #### Bug fixes
+#### Features
+
+
+### v1.1.1 (2016-06-27):
+#### Bug fixes
 - Fix a bug that prevented starting services that aliased links.
 
 ### v1.1.0 (2016-06-24):

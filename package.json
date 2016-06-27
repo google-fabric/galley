@@ -1,6 +1,6 @@
 {
   "name": "galley",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Galley is a Docker container orchestator for development and testing.",
   "main": "build/lib/index.js",
   "scripts": {
