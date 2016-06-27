@@ -1,3 +1,7 @@
+### Next Release
+#### Bug fixes
+- Fix a bug that prevented starting services that aliased links.
+
 ### v1.1.0 (2016-06-24):
 #### Bug fixes
  - Fix recreation logic for missing links on Docker >= 1.10 (#40)
