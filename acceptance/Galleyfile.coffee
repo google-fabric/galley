@@ -27,7 +27,7 @@ module.exports =
   'backend':
     image: 'galley-integration-backend'
     links:
-      'galley-integration': ['database']
+      'galley-integration': ['database:db']
     source: '/src/public'
     volumesFrom: ['config']
 

@@ -153,13 +153,12 @@ isLinkMissing = (containerInfo, createOpts) ->
   if not _.isEqual(currentLinks, requestedLinks)
     RSVP.resolve(true)
   else
-    [service, envParts...] = containerInfo.Name.split("/")[1].split(".")
-    env = envParts.join('.')
     docker = new Docker()
-    prereqs = createOpts.HostConfig.Links.map (link) -> link.split(':')[1]
+    # createOpts.HostConfig.Links looks like ['/container-name.env:link-name', '/foo.dev:foo']
+    # We need to use the actual container name, not it's aliased link name to be able to inspect it below.
+    prereqs = createOpts.HostConfig.Links.map (link) -> link.split(':')[0].slice(1)
     prereqContainerInfos = prereqs.map (prereq) ->
-      prereqContainerName = "#{prereq}.#{env}"
-      DockerUtils.inspectContainer docker.getContainer(prereqContainerName)
+      DockerUtils.inspectContainer docker.getContainer(prereq)
       .then ({container, info}) -> info.Created > containerInfo.Created
     RSVP.all _.compact(prereqContainerInfos)
     .then _.some

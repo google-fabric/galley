@@ -7,7 +7,7 @@ var fs = require('fs');
 // container.
 
 http.createServer(function (req, res) {
-  http.get({host: 'database', port: '8080', path: '/data.json'}, function(dbres) {
+  http.get({host: 'db', port: '8080', path: '/data.json'}, function(dbres) {
     dbres.on('data', function(d) {
       try {
         var index = fs.readFileSync('public/index.html').toString();
