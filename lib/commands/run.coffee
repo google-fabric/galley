@@ -917,7 +917,7 @@ go = (docker, servicesConfig, services, options) ->
 
   .catch (err) ->
     if err? and err isnt '' and typeof err is 'string' or err.json?
-      message = err.json?.message.trim() or ((err if typeof err is 'string') or err.message or 'Unknown error').trim()
+      message = err.json?.message?.trim() or ((err if typeof err is 'string') or err.message or 'Unknown error').trim()
       message = message.replace /^Error: /, ''
       options.reporter.error chalk.bold('Error:') + ' ' + message
 
