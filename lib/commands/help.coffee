@@ -178,7 +178,7 @@ printHelp = (args, helps) ->
       printHelp args, helps[command]
     else
       print "Error: Unrecognized argument: #{command}"
-      printHelp args, helps['']
+      printHelp args, helps['_']
       process.exit 1
 
 module.exports = (args, options, done) ->
