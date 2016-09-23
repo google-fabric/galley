@@ -3,6 +3,10 @@
 #### Features
 
 
+### v1.1.1 (2016-09-23):
+#### Bug fixes
+- Fix a bug that prevented some errors from getting logged.
+
 ### v1.1.1 (2016-06-27):
 #### Bug fixes
 - Fix a bug that prevented starting services that aliased links.
