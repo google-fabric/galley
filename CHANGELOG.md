@@ -3,7 +3,7 @@
 #### Features
 
 
-### v1.1.1 (2016-09-23):
+### v1.1.2 (2016-09-23):
 #### Bug fixes
 - Fix a bug that prevented some errors from getting logged.
 
