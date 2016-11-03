@@ -1,4 +1,7 @@
+_ = require 'lodash'
 chokidar = require 'chokidar'
+fs = require 'fs'
+path = require 'path'
 
 # Separate binary to watch for changes and send a 'change' message back to the parent when they
 # happen. We isolate this into its own process because the fsevents code has a habit of segfaulting
@@ -21,8 +24,21 @@ notifyHandler = ->
   process.send 'change'
 
 source = process.argv[2]
+
+# If a .dockerignore exists, respect its ignored files including the default ignored
+ignoredFilesList = ['.DS_Store', '.git']
+dockerignorePath = path.resolve(source, '.dockerignore')
+if fs.existsSync(dockerignorePath)
+  dockerignoreLines = fs.readFileSync(dockerignorePath).split('\n')
+  ignoredFilesList = _.concat(ignoredFilesList, dockerignoreLines)
+
+ignoredFilesList = _.map(ignoredFilesList, (line) ->
+  line.replace('.', '\\.')
+)
+ignoredFilesRegex = '/' + ignoredFilesList.join('|') + '/'
+
 watcher = chokidar.watch source,
-  ignored: /\.DS_Store|\.git/
+  ignored: ignoredFilesRegex
   ignoreInitial: true
 .on 'add', watchHandler
 .on 'addDir', watchHandler
