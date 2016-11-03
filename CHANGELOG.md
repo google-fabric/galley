@@ -2,6 +2,10 @@
 #### Bug fixes
 #### Features
 
+### v1.2.0 (2016-11-03):
+#### Features
+ - Files in `.dockerignore` will be ignored by the rsync container.
+   This should improve performance in projects with many files that would be ignored (e.g. `node_modules`).
 
 ### v1.1.2 (2016-09-23):
 #### Bug fixes
