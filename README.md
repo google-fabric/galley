@@ -11,11 +11,9 @@ and test environments. Galley automatically starts a container’s dependencies 
 start up a web server, its database, an intermediate data service (and its database), some queues, worker processes, and
 the monitoring server they all connect to.
 
-**Latest version:** 1.2.0
+**Latest version:** 1.2.1
 
-- Fix a bug that prevented some errors from getting logged.
- - Fix recreation logic for missing links on Docker >= 1.10 (#40)
- - Fix a bug that prevented starting services that aliased links.
+- Fix a bug with the new watch ignore logic not creating a proper regex.
 
 ### What makes Galley different?
 
