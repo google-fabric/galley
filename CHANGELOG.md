@@ -2,6 +2,10 @@
 #### Bug fixes
 #### Features
 
+### v1.2.1 (2016-11-07):
+#### Features
+ - Fix a bug with the new watch ignore logic not creating a proper regex.
+
 ### v1.2.0 (2016-11-03):
 #### Features
  - Files in `.dockerignore` will be ignored by the rsync container.
