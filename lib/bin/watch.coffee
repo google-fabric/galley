@@ -35,7 +35,7 @@ if fs.existsSync(dockerignorePath)
 ignoredFilesList = _.map(ignoredFilesList, (line) ->
   line.replace('.', '\\.')
 )
-ignoredFilesRegex = '/' + ignoredFilesList.join('|') + '/'
+ignoredFilesRegex = new RegExp(ignoredFilesList.join('|'))
 
 watcher = chokidar.watch source,
   ignored: ignoredFilesRegex
