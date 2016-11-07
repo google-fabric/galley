@@ -29,11 +29,11 @@ source = process.argv[2]
 ignoredFilesList = ['.DS_Store', '.git']
 dockerignorePath = path.resolve(source, '.dockerignore')
 if fs.existsSync(dockerignorePath)
-  dockerignoreLines = fs.readFileSync(dockerignorePath).split('\n')
-  ignoredFilesList = _.concat(ignoredFilesList, dockerignoreLines)
+  dockerignoreLines = fs.readFileSync(dockerignorePath).toString('utf8').split('\n')
+  ignoredFilesList = ignoredFilesList.concat(_.compact(dockerignoreLines))
 
 ignoredFilesList = _.map(ignoredFilesList, (line) ->
-  line.replace('.', '\\.')
+  line.replace(/\./g, '\\.')
 )
 ignoredFilesRegex = new RegExp(ignoredFilesList.join('|'))
 
