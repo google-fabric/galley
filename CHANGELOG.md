@@ -2,6 +2,10 @@
 #### Bug fixes
 #### Features
 
+### v1.2.2 (2016-11-07):
+#### Features
+ - Fix additional errors with watch logic
+
 ### v1.2.1 (2016-11-07):
 #### Features
  - Fix a bug with the new watch ignore logic not creating a proper regex.
