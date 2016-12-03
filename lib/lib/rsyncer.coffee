@@ -8,6 +8,9 @@ Rsync = require('rsync')
 
 WATCH_CHILD_PATH = path.resolve __dirname, '../bin/watch.js'
 
+MAX_EXECUTION_RETRIES = 3
+EXECUTION_RETRY_WAIT_TIME = 1000
+
 # Class to watch a directory for changes and use rsync to bring a remote directory up-to-date.
 class Rsyncer
   # Options:
@@ -52,6 +55,7 @@ class Rsyncer
     new RSVP.Promise (resolve, reject) =>
       statusLines = []
       @syncing = true
+      numRetries = 0
 
       completionHandler = (error, code, cmd) =>
         @syncing = false
@@ -62,7 +66,12 @@ class Rsyncer
         pathStatusLines = statusLines[2...-2]
         fileStatusLines = _.filter pathStatusLines, (line) -> line.slice(-1) isnt '/'
 
-        if error then reject(error)
+        if error
+          # Attempt to retry execution in case the connection was closed unexpectedly.
+          if numRetries < MAX_EXECUTION_RETRIES
+            setTimeout (=> @rsync.execute completionHandler, stdoutHandler), EXECUTION_RETRY_WAIT_TIME
+            numRetries++
+          else reject(error)
         else resolve(fileStatusLines)
 
       # "data" ends up being some chunk of rsync's output, which is for the most part newline-
