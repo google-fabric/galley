@@ -2,6 +2,10 @@
 #### Bug fixes
 #### Features
 
+### v1.2.3 (2016-12-05):
+#### Features
+- Fix edge case bug around rsync execution race condition on startup
+
 ### v1.2.2 (2016-11-07):
 #### Features
  - Fix additional errors with watch logic
