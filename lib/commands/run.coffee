@@ -36,7 +36,7 @@ makeCreateOpts = (imageInfo, serviceConfig, servicesMap, options) ->
     'Env': DockerArgs.formatEnvVariables(serviceConfig.env)
     'Labels':
       'io.fabric.galley.primary': 'false'
-    'User': serviceConfig.user
+    'User': "#{serviceConfig.user}"
     'Volumes': DockerArgs.formatVolumes(serviceConfig.volumes)
     'HostConfig':
       'ExtraHosts': ["#{serviceConfig.name}:127.0.0.1"]
