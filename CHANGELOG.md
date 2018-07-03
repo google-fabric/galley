@@ -2,6 +2,10 @@
 #### Bug fixes
 #### Features
 
+### v1.2.4 (2018-07-03):
+#### Bug fixes
+- Fix a bug that prevented passing a valid uid with the `--user` cli flag
+
 ### v1.2.3 (2016-12-05):
 #### Features
 - Fix edge case bug around rsync execution race condition on startup

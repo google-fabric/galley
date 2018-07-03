@@ -11,7 +11,7 @@ and test environments. Galley automatically starts a container’s dependencies 
 start up a web server, its database, an intermediate data service (and its database), some queues, worker processes, and
 the monitoring server they all connect to.
 
-**Latest version:** 1.2.3
+**Latest version:** 1.2.4
 
 - Fix edge case bug around rsync execution race condition on startup
 
