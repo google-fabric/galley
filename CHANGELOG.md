@@ -2,6 +2,10 @@
 #### Bug fixes
 #### Features
 
+### v1.2.5 (2019-03-18):
+#### Bug fixes
+- Fix a bug that was closing the `process.stderr` stream inappropriately
+
 ### v1.2.4 (2018-07-03):
 #### Bug fixes
 - Fix a bug that prevented passing a valid uid with the `--user` cli flag
