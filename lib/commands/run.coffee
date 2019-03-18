@@ -413,7 +413,7 @@ maybePipeStdStreams = (container, outputStream, options) ->
       else
         outputStream.on 'end', ->
           try options.stdout.end() catch # ignore
-          try options.stderr.end() catch # ignore
+          try options.stderr !== process.stderr && options.stderr.end() catch # ignore
 
         # For non-TTY, we keep stdout and stderr separate, and pipe them appropriately to our
         # process's streams.
