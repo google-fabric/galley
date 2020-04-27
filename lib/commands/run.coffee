@@ -841,7 +841,7 @@ parseArgs = (args) ->
   # rather than replacing the "env" wholesale. This has the desired behavior of the command line
   # overriding the config values as well.
   for envVar in [].concat(argv.env or [])
-    [name, val] = envVar.split '='
+    [name, val] = envVar.split /=(.+)/
     serviceConfigOverrides.env[name] = val
 
   if argv.detach then serviceConfigOverrides.attach = false

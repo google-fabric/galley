@@ -2,6 +2,9 @@
 #### Bug fixes
 #### Features
 
+### v1.2.6 (2020-04-27):
+- Fix a bug that improperly truncated command line args containing `=`
+
 ### v1.2.5 (2019-03-18):
 #### Bug fixes
 - Fix a bug that was closing the `process.stderr` stream inappropriately
