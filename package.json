@@ -48,7 +48,7 @@
     "dockerode": "^2.0.4",
     "home-dir": "^1.0.0",
     "is-running": "^2.0.0",
-    "lodash": "^3.0.0",
+    "lodash": "^4.17.19",
     "minimist": "^1.1.0",
     "rsvp": "^3.0.16",
     "rsync": "^0.4.0",
